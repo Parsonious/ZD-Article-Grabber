@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35122.118
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZD Article Grabber", "ZD Article Grabber.csproj", "{36A49E5C-92C3-4D49-AF7C-E5A9CE21ECCE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{36A49E5C-92C3-4D49-AF7C-E5A9CE21ECCE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36A49E5C-92C3-4D49-AF7C-E5A9CE21ECCE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36A49E5C-92C3-4D49-AF7C-E5A9CE21ECCE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36A49E5C-92C3-4D49-AF7C-E5A9CE21ECCE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {56A2E950-3E41-4209-82E3-F3D34005293D}
+	EndGlobalSection
+EndGlobal

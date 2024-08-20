@@ -1,0 +1,6 @@
+@ZD_Article_Grabber_HostAddress = http://localhost:5265
+
+GET {{ZD_Article_Grabber_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
