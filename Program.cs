@@ -7,32 +7,45 @@ builder.Services.AddHttpClient();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-#if DEBUG
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll",
-        builder =>
-        {
-            builder.AllowAnyOrigin()
-                   .AllowAnyHeader()
-                   .AllowAnyMethod();
-        });
-});
-#endif
-#if !DEBUG
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowSpecificOrigins",
-    builder =>
+
+ConfigurationManager configuration = builder.Configuration;
+IWebHostEnvironment environment = builder.Environment;
+
+builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                      .AddJsonFile($"appsettings.{environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
+
+    builder.Services.AddCors(options =>
     {
-        builder.WithOrigins("https://bepio.net", "http://bepio.net", "https://compiqsolutions.zendesk.com/")
-        .AllowAnyHeader()
-        .AllowAnyMethod();
+        options.AddPolicy(name: "AllowSpecificOrigins",
+        policy =>
+        {
+            policy
+            .WithOrigins("https://bepio.net", "http://bepio.net", "https://compiqsolutions.zendesk.com/", "https://parsonious.gihub.io")
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+        });
+        options.AddPolicy(name: "AllowAll",
+            policy =>
+            {
+                policy
+                .AllowAnyHeader()
+                .AllowAnyOrigin()
+                .AllowAnyMethod();
+            });
+        options.AddDefaultPolicy(
+            policy =>
+            {
+                policy
+                .AllowAnyHeader()
+                .AllowAnyOrigin()
+                .AllowAnyMethod();
+            });
     });
-});
-#endif
 
 var app = builder.Build();
+
+app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "AllowSpecificOrigins"); //if app env is dev cors == allowall else == allowspecificorigins
 
 // Configure the HTTP request pipeline.
 if ( app.Environment.IsDevelopment() )
@@ -42,7 +55,9 @@ if ( app.Environment.IsDevelopment() )
 }
 
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseRouting();
+
+
 app.UseAuthorization();
 
 app.MapControllers();
