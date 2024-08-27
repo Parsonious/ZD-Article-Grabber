@@ -1,30 +1,37 @@
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
-[Route("api/[controller]")]
-[ApiController]
-public class ContentController : ControllerBase
+
+namespace ZD_Article_Grabber
 {
-    [HttpGet("{title}")]
-    public IActionResult GetContent(string title)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ContentController : ControllerBase
     {
-        // Normalize title to match your file naming convention
-        string normalizedTitle = title.Replace(" ", "%20");
+        [HttpGet("{title}")]
 
-        // Construct the URL
-        string url = $"https://parsonious.github.io/CIQ-How-To/pages/{normalizedTitle}.html";
-
-        using ( var client = new HttpClient() )
+        public IActionResult GetContent(string title)
         {
-            var response = client.GetAsync(url).Result;
-            if ( response.IsSuccessStatusCode )
+            // Normalize title to match your file naming convention
+            string normalizedTitle = title.Replace(" ", "%20");
+
+            // Construct the URL
+            string url = $"https://parsonious.github.io/CIQ-How-To/pages/{normalizedTitle}.html";
+
+            using ( var client = new HttpClient() )
             {
-                string htmlContent = response.Content.ReadAsStringAsync().Result;
-                return Content(htmlContent, "text/html");
-            }
-            else
-            {
-                return NotFound("Page not found");
+                var response = client.GetAsync(url).Result;
+                if ( response.IsSuccessStatusCode )
+                {
+                    string htmlContent = response.Content.ReadAsStringAsync().Result;
+                    return Content(htmlContent, "text/html");
+                }
+                else
+                {
+                    return NotFound("Page not found");
+                }
             }
         }
     }
+
 }
