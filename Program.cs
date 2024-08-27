@@ -21,7 +21,7 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnCh
         policy =>
         {
             policy
-            .WithOrigins("https://bepio.net", "http://bepio.net", "https://compiqsolutions.zendesk.com/", "https://parsonious.gihub.io")
+            .WithOrigins("https://bepio.net", "http://bepio.net", "https://compiqsolutions.zendesk.com/", "https://parsonious.github.io")
             .AllowAnyHeader()
             .AllowAnyMethod();
         });
@@ -56,10 +56,6 @@ if ( app.Environment.IsDevelopment() )
 
 app.UseHttpsRedirection();
 app.UseRouting();
-
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
