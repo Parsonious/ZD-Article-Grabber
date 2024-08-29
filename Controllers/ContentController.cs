@@ -27,7 +27,7 @@ namespace ZD_Article_Grabber
 
             if(!_cache.TryGetValue(cacheKey, out string htmlContent))
             {
-                //Cache not found => Fetch from external source
+                // Cache not found => Fetch from external source
                 string url = $"https://parsonious.github.io/CIQ-How-To/pages/{normalizedTitle}.html";
                 using(var client = new HttpClient() )
                 {
@@ -36,10 +36,10 @@ namespace ZD_Article_Grabber
                     {
                         htmlContent = response.Content.ReadAsStringAsync().Result;
 
-                        //Set cache options
+                        // Set cache options
                         var cacheEntryOptions = new MemoryCacheEntryOptions()
                             .SetSlidingExpiration(TimeSpan.FromMinutes(10)); //adjust for cache duration
-                        //Save data in cache
+                        // Save data in cache
                         _cache.Set(cacheKey, htmlContent, cacheEntryOptions);
                     }
                     else
