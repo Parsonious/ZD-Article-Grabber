@@ -32,15 +32,31 @@ jobs:
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-    - name: Deploy to Server
+    - name: Deploy to server
       run: |
-        ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-          docker pull ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest
-          docker stop $(docker ps -q --filter ancestor=${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest)
-          docker rm $(docker ps -q --filter ancestor=${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest)
-          docker run -d -p 80:80 -p 443:443 \
-            -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
-            -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
-            ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest
-        EOF
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          # Get the latest container name with the pattern zd-article-grabber-N
+          latest_container=$(docker ps -a --format "{{.Names}}" | grep 'zd-article-grabber-' | sort -V | tail -n 1)
+
+          if [ -z "$latest_container" ]; then
+            new_version=1
+          else
+            current_version=${latest_container##*-}
+            new_version=$((current_version + 1))
+          fi
+
+          new_container_name="zd-article-grabber-$new_version"
+
+          # Run a new container with the incremented name
+          docker run -d -p 80:80 -p 443:443 --name $new_container_name parsonsbpp/zd-article-grabber:latest \
+          -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
+          -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
+          ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest
+
+          # Remove older containers if more than 3 exist
+          containers_to_remove=$(docker ps -a --format "{{.Names}}" | grep 'zd-article-grabber-' | sort -V | head -n -3)
+          if [ ! -z "$containers_to_remove" ]; then
+            docker rm -f $containers_to_remove
+          fi
+          EOF
 
