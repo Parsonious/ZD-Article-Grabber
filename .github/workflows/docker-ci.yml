@@ -34,7 +34,7 @@ jobs:
 
     - name: Deploy to Server
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
           docker pull ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest
           docker stop $(docker ps -q --filter ancestor=${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest)
           docker rm $(docker ps -q --filter ancestor=${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest)
@@ -43,3 +43,4 @@ jobs:
             -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
             ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest
         EOF
+
