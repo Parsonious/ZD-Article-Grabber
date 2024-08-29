@@ -47,8 +47,9 @@ jobs:
 
           new_container_name="zd-article-grabber-$new_version"
 
-          # Run a new container with the incremented name
-          docker run -d -p 80:80 -p 443:443 --name $new_container_name parsonsbpp/zd-article-grabber:latest \
+          # Run a new container with the incremented name and mount the volumes correctly
+          docker run -d -p 80:80 -p 443:443 \
+          --name $new_container_name \
           -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
           -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
           ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest
