@@ -39,6 +39,7 @@ namespace ZD_Article_Grabber
                         // Set cache options
                         var cacheEntryOptions = new MemoryCacheEntryOptions()
                             .SetSlidingExpiration(TimeSpan.FromMinutes(10)); //adjust for cache duration
+                        
                         // Save data in cache
                         _cache.Set(cacheKey, htmlContent, cacheEntryOptions);
                     }
