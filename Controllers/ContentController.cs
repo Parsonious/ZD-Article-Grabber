@@ -31,6 +31,7 @@ namespace ZD_Article_Grabber
                 string url = $"https://parsonious.github.io/CIQ-How-To/pages/{normalizedTitle}.html";
                 using(var client = new HttpClient() )
                 {
+                    // Determine result from client
                     var response = client.GetAsync(url).Result;
                     if(response.IsSuccessStatusCode)
                     {
