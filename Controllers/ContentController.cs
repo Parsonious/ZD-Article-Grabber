@@ -27,7 +27,7 @@ namespace ZD_Article_Grabber
 
             if(!_cache.TryGetValue(cacheKey, out string htmlContent))
             {
-                //Cache not found, fetch from external source
+                //Cache not found => Fetch from external source
                 string url = $"https://parsonious.github.io/CIQ-How-To/Pages/{normalizedTitle}.html";
                 using(var client = new HttpClient() )
                 {
