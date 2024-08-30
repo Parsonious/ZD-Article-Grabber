@@ -25,8 +25,8 @@ jobs:
     - name: Extract Version Information
       id: extract_version
       run: |
-        major_version=$(grep 'public const string Major' ./'ZD Article Grabber'/VersionInfo.cs | grep -o '[0-9]\+')
-        minor_version=$(grep 'public const string Minor' ./'ZD Article Grabber'/VersionInfo.cs | grep -o '[0-9]\+')
+        major_version=$(grep 'public const string Major' ./VersionInfo.cs | grep -o '[0-9]\+')
+        minor_version=$(grep 'public const string Minor' ./VersionInfo.cs | grep -o '[0-9]\+')
         echo "MAJOR_VERSION=$major_version" >> $GITHUB_ENV
         echo "MINOR_VERSION=$minor_version" >> $GITHUB_ENV
 
