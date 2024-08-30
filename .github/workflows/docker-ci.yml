@@ -3,7 +3,7 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - main  # Trigger the workflow when changes are pushed to the 'main' branch
+      - main
 
 jobs:
   deploy:
@@ -22,10 +22,18 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    - name: Extract Version Information
+      id: extract_version
+      run: |
+        major_version=$(grep 'public const string Major' ./Path/To/VersionInfo.cs | grep -o '[0-9]\+')
+        minor_version=$(grep 'public const string Minor' ./Path/To/VersionInfo.cs | grep -o '[0-9]\+')
+        echo "MAJOR_VERSION=$major_version" >> $GITHUB_ENV
+        echo "MINOR_VERSION=$minor_version" >> $GITHUB_ENV
+
     - name: Build and push Docker image
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest .
-        docker push ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.latest .
+        docker push ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.latest
 
     - name: Add SSH key
       uses: webfactory/ssh-agent@v0.5.3
@@ -35,29 +43,27 @@ jobs:
     - name: Deploy to server
       run: |
           ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-          # Get the latest container name with the pattern zd-article-grabber-N
-          latest_container=$(docker ps -a --format "{{.Names}}" | grep 'zd-article-grabber-' | sort -V | tail -n 1)
+          version="${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.$(date +'%Y%m%d%H%M%S')"
+          container_name="zdag-$version"
 
-          if [ -z "$latest_container" ]; then
-            new_version=1
-          else
-            current_version=${latest_container##*-}
-            new_version=$((current_version + 1))
+          # Stop and remove the current container
+          current_container=$(docker ps -q --filter "name=zdag")
+          if [ ! -z "$current_container" ]; then
+            docker stop $current_container
+            docker rm $current_container
           fi
 
-          new_container_name="zd-article-grabber-$new_version"
-
-          # Run a new container with the incremented name and mount the volumes correctly
+          # Run the new container
           docker run -d -p 80:80 -p 443:443 \
-          --name $new_container_name \
+          --name $container_name \
           -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
           -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
-          ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:latest
+          ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.latest
 
-          # Remove older containers if more than 3 exist
-          containers_to_remove=$(docker ps -a --format "{{.Names}}" | grep 'zd-article-grabber-' | sort -V | head -n -3)
-          if [ ! -z "$containers_to_remove" ]; then
-            docker rm -f $containers_to_remove
+          # Clean up old containers
+          old_containers=$(docker ps -a -q --filter "name=zdag" | tail -n +4)
+          if [ ! -z "$old_containers" ]; then
+            docker rm -f $old_containers
           fi
           EOF
 
