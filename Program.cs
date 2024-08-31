@@ -23,7 +23,7 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnCh
         policy =>
         {
             policy
-            .WithOrigins("https://bepio.net", "http://bepio.net", "https://compiqsolutions.zendesk.com/", "https://parsonious.github.io")
+            .WithOrigins("https://bepio.net", "http://bepio.net", "https://compiqsolutions.zendesk.com", "https://parsonious.github.io")
             .AllowAnyHeader()
             .AllowAnyMethod();
         });
