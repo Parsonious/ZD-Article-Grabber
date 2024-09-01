@@ -47,8 +47,8 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnCh
 
 var app = builder.Build();
 
-app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "AllowSpecificOrigins"); //if app env is dev cors == allowall else == allowspecificorigins
-
+//app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "AllowSpecificOrigins"); //if app env is dev cors == allowall else == allowspecificorigins
+app.UseCors("AllowAll");
 // Configure the HTTP request pipeline.
 if ( app.Environment.IsDevelopment() )
 {
