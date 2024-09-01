@@ -24,8 +24,8 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnCh
         {
             policy
             .WithOrigins("https://bepio.net", "http://bepio.net",
-            "https://compiqsolutions.zendesk.com", "https://compiqsolutions.zendesk.com/", 
-            "https://parsonious.github.io", "https://web.postman.co/")
+            "https://compiqsolutions.zendesk.com", 
+            "https://parsonious.github.io", "https://web.postman.co")
             .AllowAnyHeader()
             .AllowAnyMethod();
         });
@@ -50,7 +50,6 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnCh
 builder.Services.AddControllers();
 var app = builder.Build();
 
-app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "AllowSpecificOrigins"); //if app env is dev cors == allowall else == allowspecificorigins
 //app.UseCors("AllowAll");
 // Configure the HTTP request pipeline.
 if ( app.Environment.IsDevelopment() )
@@ -60,6 +59,8 @@ if ( app.Environment.IsDevelopment() )
 }
 
 app.UseHttpsRedirection();
+app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "AllowSpecificOrigins"); //if app env is dev cors == allowall else == allowspecificorigins
+
 app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
