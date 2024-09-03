@@ -40,7 +40,7 @@ namespace ZD_Article_Grabber
 
                     if ( !string.IsNullOrEmpty(fileUrl) )
                     {
-                        // Handle file processing (CSS or JS)j
+                        // Handle file processing (CSS or JS)
                         var localPath = await ProcessCssOrJsFile(fileUrl, fileType, client, url);
                         if ( fileType == "css" )
                         {
