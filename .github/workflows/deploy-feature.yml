@@ -33,7 +33,7 @@ jobs:
     - name: Set Timestamp
       id: set_timestamp
       run: |
-        TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+        TIMESTAMP=$(date +'%Y%m%d%H%M')
         echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
 
     - name: Define Image Tag with Branch Name
@@ -55,7 +55,7 @@ jobs:
 
     - name: Deploy to server
       run: |
-          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           set -e  # Exit on any error
           IMAGE_TAG="${{ env.IMAGE_TAG }}"
           TIMESTAMP="${{ env.TIMESTAMP }}"
