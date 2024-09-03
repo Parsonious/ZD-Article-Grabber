@@ -17,29 +17,42 @@ namespace ZD_Article_Grabber
                 var htmlDoc = new HtmlDocument();
                 htmlDoc.LoadHtml(htmlContent);
 
-                //identify and process stylesheets
-                foreach ( var link in htmlDoc.DocumentNode.SelectNodes("//link[@rel='stylesheet']") )
+                // Select both <link> and <script> elements that we want to process
+                var nodes = htmlDoc.DocumentNode.SelectNodes("//link[@rel='stylesheet'] | //script[@src]");
+
+                foreach ( var node in nodes )
                 {
-                    var cssUrl = link.GetAttributeValue("href", string.Empty);
-                    if ( !string.IsNullOrEmpty(cssUrl) )
+                    string fileUrl = string.Empty;
+                    string fileType = string.Empty;
+
+                    if ( node.Name == "link" )
                     {
-                        //handle css processing
-                        var localCssPath = await ProcessCssOrJsFile(cssUrl, "css", client, url);
-                        link.SetAttributeValue("href", localCssPath);
+                        // Process stylesheets
+                        fileUrl = node.GetAttributeValue("href", string.Empty);
+                        fileType = "css";
+                    }
+                    else if ( node.Name == "script" )
+                    {
+                        // Process JavaScript files
+                        fileUrl = node.GetAttributeValue("src", string.Empty);
+                        fileType = "js";
+                    }
+
+                    if ( !string.IsNullOrEmpty(fileUrl) )
+                    {
+                        // Handle file processing (CSS or JS)
+                        var localPath = await ProcessCssOrJsFile(fileUrl, fileType, client, url);
+                        if ( fileType == "css" )
+                        {
+                            node.SetAttributeValue("href", localPath);
+                        }
+                        else if ( fileType == "js" )
+                        {
+                            node.SetAttributeValue("src", localPath);
+                        }
                     }
                 }
 
-                //Identify and process JS files
-                foreach ( var script in htmlDoc.DocumentNode.SelectNodes("//script[@src]") )
-                {
-                    var jsUrl = script.GetAttributeValue("src", string.Empty);
-                    if ( !string.IsNullOrEmpty(jsUrl) )
-                    {
-                        //Handle JS processing
-                        var localJsPath = await ProcessCssOrJsFile(jsUrl, "js", client, url);
-                        script.SetAttributeValue("src", localJsPath);
-                    }
-                }
                 return htmlDoc.DocumentNode.OuterHtml;
             }
 
