@@ -17,7 +17,7 @@ namespace ZD_Article_Grabber
                 var htmlDoc = new HtmlDocument();
                 htmlDoc.LoadHtml(htmlContent);
 
-                // Select both <link> and <script> elements that we want to process
+                // Select both <link> and <script> elements that we want to processs
                 var nodes = htmlDoc.DocumentNode.SelectNodes("//link[@rel='stylesheet'] | //script[@src]");
 
                 foreach ( var node in nodes )
