@@ -1,0 +1,87 @@
+name: Deploy Feature Branch to Server
+
+on:
+  push:
+    branches:
+      - 'Feature*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract Version Information
+      id: extract_version
+      run: |
+        major_version=$(grep 'public const string Major' ./VersionInfo.cs | grep -o '[0-9]\+')
+        minor_version=$(grep 'public const string Minor' ./VersionInfo.cs | grep -o '[0-9]\+')
+        echo "MAJOR_VERSION=$major_version" >> $GITHUB_ENV
+        echo "MINOR_VERSION=$minor_version" >> $GITHUB_ENV
+
+    - name: Set Timestamp
+      id: set_timestamp
+      run: |
+        TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+        echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
+
+    - name: Define Image Tag with Branch Name
+      id: define_tag
+      run: |
+        BRANCH_NAME=$(echo ${{ github.ref }} | sed 's/refs\/heads\///')
+        IMAGE_TAG="${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.TIMESTAMP }}-$BRANCH_NAME"
+        echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+
+    - name: Build and push Docker image
+      run: |
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:${{ env.IMAGE_TAG }} .
+        docker push ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:${{ env.IMAGE_TAG }}
+
+    - name: Add SSH key
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Deploy to server
+      run: |
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+          set -e  # Exit on any error
+          IMAGE_TAG="${{ env.IMAGE_TAG }}"
+          TIMESTAMP="${{ env.TIMESTAMP }}"
+          version="${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.$TIMESTAMP"
+          container_name="zdag-$version"
+
+          # Remove containers associated with any other Feature branch
+          old_feature_containers=$(docker ps -a -q --filter "name=zdag-Feature")
+          if [ ! -z "$old_feature_containers" ]; then
+            docker rm -f $old_feature_containers
+          fi
+
+          # Remove images associated with any other Feature branch
+          old_feature_images=$(docker images ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber --format "{{.ID}} {{.Tag}}" | grep "Feature" | awk '{print $1}')
+          if [ ! -z "$old_feature_images" ]; then
+            docker rmi -f $old_feature_images
+          fi
+
+          # Run the new container on port 8080
+          if ! output=$(docker run -d -p 8080:80 -p 4403:443 \
+          --name $container_name \
+          -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
+          -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
+          ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:${{ env.IMAGE_TAG }} 2>&1); then
+            echo "Docker run command failed with the following error:"
+            echo "$output"
+            exit 1
+          fi
+          EOF
