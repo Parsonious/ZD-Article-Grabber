@@ -24,18 +24,18 @@ namespace ZD_Article_Grabber
                 {
                     string fileUrl = string.Empty;
                     string fileType = string.Empty;
-
-                    if ( node.Name == "link" )
+                    switch (node.Name)
                     {
-                        // Process stylesheets
-                        fileUrl = node.GetAttributeValue("href", string.Empty);
-                        fileType = "css";
-                    }
-                    else if ( node.Name == "script" )
-                    {
-                        // Process JavaScript files
-                        fileUrl = node.GetAttributeValue("src", string.Empty);
-                        fileType = "js";
+                        case "link":
+                            // Process stylesheets
+                            fileUrl = node.GetAttributeValue("href", string.Empty);
+                            fileType = "css";
+                            break;
+                        case "script":
+                            // Process JavaScript files
+                            fileUrl = node.GetAttributeValue("src", string.Empty);
+                            fileType = "js";
+                            break;
                     }
 
                     if ( !string.IsNullOrEmpty(fileUrl) )
