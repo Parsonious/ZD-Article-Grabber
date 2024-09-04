@@ -69,8 +69,8 @@ jobs:
             docker rmi -f $old_feature_images
           fi
 
-          # Run the new container on port 8080
-          if ! output=$(docker run -d -p 8080:80 -p 8443:443 \
+          # Run the new container on port 8081
+          if ! output=$(docker run -d -p 8081:80 -p 8444:443 \
           --name $container_name \
           -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
           -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
