@@ -30,16 +30,10 @@ jobs:
         echo "MAJOR_VERSION=$major_version" >> $GITHUB_ENV
         echo "MINOR_VERSION=$minor_version" >> $GITHUB_ENV
 
-    - name: Set Timestamp
-      id: set_timestamp
-      run: |
-        TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-        echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
-
     - name: Define Image Tag
       id: define_tag
       run: |
-        IMAGE_TAG="${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.TIMESTAMP }}"
+        IMAGE_TAG="PROD.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}"
         echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
 
     - name: Build and push Docker image
@@ -58,11 +52,11 @@ jobs:
           set -e  # Exit on any error
           IMAGE_TAG="${{ env.IMAGE_TAG }}"
           TIMESTAMP="${{ env.TIMESTAMP }}"
-          version="${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.$TIMESTAMP"
-          container_name="zdag-$version"
+          version="PROD.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}"
+          container_name="$version"
 
-          # Stop and remove the current container
-          current_container=$(docker ps -q --filter "name=zdag")
+          # Stop the current container
+          current_container=$(docker ps -q --filter "name=PROD")
           if [ ! -z "$current_container" ]; then
             docker stop $current_container
           fi
@@ -79,7 +73,7 @@ jobs:
           fi
 
           # Clean up old containers
-          old_containers=$(docker ps -a -q --filter "name=zdag" | tail -n +4)
+          old_containers=$(docker ps -a -q --filter "name=PROD" | tail -n +4)
           if [ ! -z "$old_containers" ]; then
             docker rm -f $old_containers
           fi
