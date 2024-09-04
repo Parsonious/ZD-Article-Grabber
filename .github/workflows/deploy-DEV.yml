@@ -27,16 +27,16 @@ jobs:
       run: |
         major_version=$(grep 'public const string Major' ./VersionInfo.cs | grep -o '[0-9]\+')
         minor_version=$(grep 'public const string Minor' ./VersionInfo.cs | grep -o '[0-9]\+')
-        build_version=$(grep 'public const string Build' ./VersionInfo.cs | grep -o '[0-9]\+')
+        patch_version=$(grep 'public const string Patch' ./VersionInfo.cs | grep -o '[0-9]\+')
         echo "MAJOR_VERSION=$major_version" >> $GITHUB_ENV
         echo "MINOR_VERSION=$minor_version" >> $GITHUB_ENV
-        echo "BUILD_VERSION=$build_version" >> $GITHUB_ENV
+        echo "PATCH_VERSION=$patch_version" >> $GITHUB_ENV
 
     - name: Define Image Tag
       id: define_tag
       run: |
         BRANCH_NAME=$(echo ${{ github.ref }} | sed 's/refs\/heads\///')
-        IMAGE_TAG="DEV.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.BUILD_VERSION }}"
+        IMAGE_TAG="DEV.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.PATCH_VERSION }}"
         echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
 
     - name: Build and push Docker image
@@ -54,7 +54,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           set -e  # Exit on any error
           IMAGE_TAG="${{ env.IMAGE_TAG }}"
-          version="DEV.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.$TIMESTAMP"
+          version="DEV.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.PATCH_VERSION }}"
           container_name="$version"
 
           # Remove containers associated with any other Dev branch
