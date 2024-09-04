@@ -1,9 +1,9 @@
-name: Deploy to Server
+name: Deploy Feature Branch to Server
 
 on:
   push:
     branches:
-      - main
+      - 'Dev-*'
 
 jobs:
   deploy:
@@ -27,19 +27,16 @@ jobs:
       run: |
         major_version=$(grep 'public const string Major' ./VersionInfo.cs | grep -o '[0-9]\+')
         minor_version=$(grep 'public const string Minor' ./VersionInfo.cs | grep -o '[0-9]\+')
+        build_version=$(grep 'public const string Build' ./VersionInfo.cs | grep -o '[0-9]\+')
         echo "MAJOR_VERSION=$major_version" >> $GITHUB_ENV
         echo "MINOR_VERSION=$minor_version" >> $GITHUB_ENV
-
-    - name: Set Timestamp
-      id: set_timestamp
-      run: |
-        TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-        echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
+        echo "BUILD_VERSION=$build_version" >> $GITHUB_ENV
 
     - name: Define Image Tag
       id: define_tag
       run: |
-        IMAGE_TAG="${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.TIMESTAMP }}"
+        BRANCH_NAME=$(echo ${{ github.ref }} | sed 's/refs\/heads\///')
+        IMAGE_TAG="DEV.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.BUILD_VERSION }}"
         echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
 
     - name: Build and push Docker image
@@ -54,21 +51,26 @@ jobs:
 
     - name: Deploy to server
       run: |
-          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
           set -e  # Exit on any error
           IMAGE_TAG="${{ env.IMAGE_TAG }}"
-          TIMESTAMP="${{ env.TIMESTAMP }}"
-          version="${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.$TIMESTAMP"
+          version="DEV.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.$TIMESTAMP"
           container_name="zdag-$version"
 
-          # Stop and remove the current container
-          current_container=$(docker ps -q --filter "name=zdag")
-          if [ ! -z "$current_container" ]; then
-            docker stop $current_container
+          # Remove containers associated with any other Dev branch
+          old_feature_containers=$(docker ps -a -q --filter "name=zdag-Dev")
+          if [ ! -z "$old_feature_containers" ]; then
+            docker rm -f $old_feature_containers
           fi
 
-          # Run the new container and capture output
-          if ! output=$(docker run -d -p 80:80 -p 443:443 \
+          # Remove images associated with any other Dev branch
+          old_feature_images=$(docker images ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber --format "{{.ID}} {{.Tag}}" | grep "Dev" | awk '{print $1}')
+          if [ ! -z "$old_feature_images" ]; then
+            docker rmi -f $old_feature_images
+          fi
+
+          # Run the new container on port 8080
+          if ! output=$(docker run -d -p 8080:80 -p 4403:443 \
           --name $container_name \
           -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
           -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
@@ -76,17 +78,5 @@ jobs:
             echo "Docker run command failed with the following error:"
             echo "$output"
             exit 1
-          fi
-
-          # Clean up old containers
-          old_containers=$(docker ps -a -q --filter "name=zdag" | tail -n +4)
-          if [ ! -z "$old_containers" ]; then
-            docker rm -f $old_containers
-          fi
-
-          # Clean up old images
-          old_images=$(docker images ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber --format "{{.ID}} {{.CreatedAt}}" | sort -r | tail -n +4 | awk '{print $1}')
-          if [ ! -z "$old_images" ]; then
-            docker rmi -f $old_images
           fi
           EOF

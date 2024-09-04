@@ -1,9 +1,9 @@
-name: Deploy Feature Branch to Server
+name: Deploy to Server
 
 on:
   push:
     branches:
-      - 'Feature-*'
+      - main
 
 jobs:
   deploy:
@@ -30,17 +30,10 @@ jobs:
         echo "MAJOR_VERSION=$major_version" >> $GITHUB_ENV
         echo "MINOR_VERSION=$minor_version" >> $GITHUB_ENV
 
-    - name: Set Timestamp
-      id: set_timestamp
-      run: |
-        TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-        echo "TIMESTAMP=${TIMESTAMP}" >> $GITHUB_ENV
-
-    - name: Define Image Tag with Branch Name
+    - name: Define Image Tag
       id: define_tag
       run: |
-        BRANCH_NAME=$(echo ${{ github.ref }} | sed 's/refs\/heads\///')
-        IMAGE_TAG="${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.TIMESTAMP }}-$BRANCH_NAME"
+        IMAGE_TAG="PROD.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}"
         echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
 
     - name: Build and push Docker image
@@ -55,27 +48,21 @@ jobs:
 
     - name: Deploy to server
       run: |
-          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           set -e  # Exit on any error
           IMAGE_TAG="${{ env.IMAGE_TAG }}"
           TIMESTAMP="${{ env.TIMESTAMP }}"
-          version="${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.$TIMESTAMP"
-          container_name="zdag-$version"
+          version="PROD.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}"
+          container_name="$version"
 
-          # Remove containers associated with any other Feature branch
-          old_feature_containers=$(docker ps -a -q --filter "name=zdag-Feature")
-          if [ ! -z "$old_feature_containers" ]; then
-            docker rm -f $old_feature_containers
+          # Stop the current container
+          current_container=$(docker ps -q --filter "name=PROD")
+          if [ ! -z "$current_container" ]; then
+            docker stop $current_container
           fi
 
-          # Remove images associated with any other Feature branch
-          old_feature_images=$(docker images ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber --format "{{.ID}} {{.Tag}}" | grep "Feature" | awk '{print $1}')
-          if [ ! -z "$old_feature_images" ]; then
-            docker rmi -f $old_feature_images
-          fi
-
-          # Run the new container on port 8080
-          if ! output=$(docker run -d -p 8080:80 -p 4403:443 \
+          # Run the new container and capture output
+          if ! output=$(docker run -d -p 80:80 -p 443:443 \
           --name $container_name \
           -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
           -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
@@ -83,5 +70,17 @@ jobs:
             echo "Docker run command failed with the following error:"
             echo "$output"
             exit 1
+          fi
+
+          # Clean up old containers
+          old_containers=$(docker ps -a -q --filter "name=PROD" | tail -n +4)
+          if [ ! -z "$old_containers" ]; then
+            docker rm -f $old_containers
+          fi
+
+          # Clean up old images
+          old_images=$(docker images ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber --format "{{.ID}} {{.CreatedAt}}" | sort -r | tail -n +4 | awk '{print $1}')
+          if [ ! -z "$old_images" ]; then
+            docker rmi -f $old_images
           fi
           EOF
