@@ -51,20 +51,20 @@ jobs:
 
     - name: Deploy to server
       run: |
-          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           set -e  # Exit on any error
           IMAGE_TAG="${{ env.IMAGE_TAG }}"
           version="DEV.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.$TIMESTAMP"
-          container_name="zdag-$version"
+          container_name="$version"
 
           # Remove containers associated with any other Dev branch
-          old_feature_containers=$(docker ps -a -q --filter "name=zdag-Dev")
+          old_feature_containers=$(docker ps -a -q --filter "name=DEV")
           if [ ! -z "$old_feature_containers" ]; then
             docker rm -f $old_feature_containers
           fi
 
           # Remove images associated with any other Dev branch
-          old_feature_images=$(docker images ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber --format "{{.ID}} {{.Tag}}" | grep "Dev" | awk '{print $1}')
+          old_feature_images=$(docker images ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber --format "{{.ID}} {{.Tag}}" | grep "DEV" | awk '{print $1}')
           if [ ! -z "$old_feature_images" ]; then
             docker rmi -f $old_feature_images
           fi
