@@ -1,12 +1,18 @@
+using ZD_Article_Grabber;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddHttpClient();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddHttpClient<Fetch>();
+builder.Services.AddTransient<Fetch>();
+
 
 
 ConfigurationManager configuration = builder.Configuration;
@@ -60,7 +66,6 @@ if ( app.Environment.IsDevelopment() )
 app.UseHttpsRedirection();
 //app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "AllowSpecificOrigins"); //if app env is dev cors == allowall else == allowspecificorigins
 app.UseCors("AllowSpecificOrigins");
-app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
