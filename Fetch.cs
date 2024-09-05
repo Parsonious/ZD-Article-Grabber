@@ -1,83 +1,113 @@
 ﻿using HtmlAgilityPack;
-using System.Net.Http;
-using System.IO;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace ZD_Article_Grabber
 {
-    public class Fetch
+    public class Fetch(IMemoryCache cache, HttpClient client)
     {
-        public async Task<string> FetchAndModifyHtmlAsync(string url)
+        private readonly IMemoryCache _cache = cache;
+        private readonly HttpClient _client = client;
+
+
+        public async Task<string> FetchAndModifyHtmlAsync(string title)
         {
-            using ( var client = new HttpClient() )
+            //normalize the title
+            string normalizedTitle = title.Replace(" ", "%20");
+            string cacheKey = $"content_{normalizedTitle}";
+
+            //check if the html is cached
+            if ( !_cache.TryGetValue(cacheKey, out string htmlContent) )
             {
-                //Fetch the HTML content
-                var htmlContent = await client.GetStringAsync(url);
+                //fetch the html if not cached
+                string url = $"https://parsonious.github.io/How-To/pages/{normalizedTitle}.html";
+                htmlContent = await GetContentFromUrlAsync(url);
 
-                //load the HTML into HAP
-                var htmlDoc = new HtmlDocument();
-                htmlDoc.LoadHtml(htmlContent);
-
-                // Select both <link> and <script> elements that we want to processs
-                var nodes = htmlDoc.DocumentNode.SelectNodes("//link[@rel='stylesheet'] | //script[@src]");
-
-                foreach ( var node in nodes )
+                if ( htmlContent == null )
                 {
-                    string fileUrl = string.Empty;
-                    string fileType = string.Empty;
-                    switch (node.Name)
-                    {
-                        case "link":
-                            // Process stylesheets
-                            fileUrl = node.GetAttributeValue("href", string.Empty);
-                            fileType = "css";
-                            break;
-                        case "script":
-                            // Process JavaScript files
-                            fileUrl = node.GetAttributeValue("src", string.Empty);
-                            fileType = "js";
-                            break;
-                    }
-
-                    if ( !string.IsNullOrEmpty(fileUrl) )
-                    {
-                        // Handle file processing (CSS or JS)
-                        var localPath = await ProcessCssOrJsFile(fileUrl, fileType, client, url);
-                        if ( fileType == "css" )
-                        {
-                            node.SetAttributeValue("href", localPath);
-                        }
-                        else if ( fileType == "js" )
-                        {
-                            node.SetAttributeValue("src", localPath);
-                        }
-                    }
+                    return "Page Not Found";
                 }
 
-                return htmlDoc.DocumentNode.OuterHtml;
+                //modify the html to replace references to CSS/JS with cached versions
+                htmlContent = await ProcessHtmlAndAssetsAsync(htmlContent, url);
+
+                // Cache the modified HTML for 10 mins
+                _cache.Set(cacheKey, htmlContent, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(10)));
             }
 
+            return htmlContent;
         }
-        private static async Task<string> ProcessCssOrJsFile(string fileUrl, string fileType, HttpClient client, string baseUrl)
+        
+        private async Task<string> GetContentFromUrlAsync(string url)
         {
-            // Resolve the full URL if it's relative
-            var resolvedUrl = new Uri(new Uri(baseUrl), fileUrl).ToString();
-            var fileName = Path.GetFileName(resolvedUrl);
-
-            // Define the local file path
-            var tempDirectory = Path.Combine("wwwroot", "static", fileType);
-            Directory.CreateDirectory(tempDirectory); // Ensure directory exists
-            var localFilePath = Path.Combine(tempDirectory, fileName);
-
-            // Check if the file already exists locally
-            if ( !File.Exists(localFilePath) )
+            try
             {
-                // Download and save the file
-                var fileContent = await client.GetByteArrayAsync(resolvedUrl);
-                await File.WriteAllBytesAsync(localFilePath, fileContent);
+                return await _client.GetStringAsync(url);
+            }
+            catch (HttpRequestException ex)
+            {
+                return ex.Message; //placeholder for better error handling
+            }
+        }
+
+        private async Task<string> ProcessHtmlAndAssetsAsync(string htmlContent, string baseUrl)
+        {
+            HtmlDocument htmlDoc = new();
+            htmlDoc.LoadHtml(htmlContent); //replace with HtmlDocument.Load for by-file loading instead
+
+            HtmlNodeCollection nodes = htmlDoc.DocumentNode.SelectNodes("//link[@rel='stylesheet'] | //script[@src]");
+
+            if ( nodes == null )
+            {
+                return htmlDoc.DocumentNode.OuterHtml; //nothing to process
+            }
+            foreach ( var node in nodes )
+            {
+                string fileUrl = node.Name == "link"
+                    ? node.GetAttributeValue("href", string.Empty)
+                    : node.GetAttributeValue("src", string.Empty);
+
+                string fileType = node.Name == "link" ? "css" : "js";
+
+                if ( !string.IsNullOrEmpty(fileUrl) )
+                {
+                    //Fetch and cache the CSS/JS file
+                    var cachedFilePath = await CacheCssOrJsFileAsync(fileUrl, fileType, baseUrl);
+
+                    //update the node with the new cached file path
+                    if ( fileType == "css" )
+                        node.SetAttributeValue("href", cachedFilePath);
+                    else if ( fileType == "js" )
+                        node.SetAttributeValue("src", cachedFilePath);
+                }
+            }
+            return htmlDoc.DocumentNode.OuterHtml;
+        }
+        private async Task<string> CacheCssOrJsFileAsync(string fileUrl, string fileType, string baseUrl)
+        {
+            //Resolve full URL
+            string resolvedUrl = new Uri(new Uri(baseUrl), fileUrl).ToString();
+            string cacheKey =$"{fileType}_{resolvedUrl}";
+
+            // Check if CSS/JS content is already cached
+            if( !_cache.TryGetValue(cacheKey,out string fileContent))
+            {
+                fileContent = await GetContentFromUrlAsync(resolvedUrl);
+                if (fileContent == null)
+                {
+                    return fileUrl; // Fallback to original URL if fetch fails
+                }
+
+                // Cache the file content
+                _cache.Set(cacheKey, fileContent, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(10)));
             }
 
-            // Return the local path to be used in the HTML
-            return $"/static/{fileType}/{fileName}";
+            // serve cached file from Memory via a controller endopoint
+            return $"/a/c/{fileType}/{Uri.EscapeDataString(Path.GetFileName(resolvedUrl))}";
         }
+
+        
     }
+
 }
