@@ -2,14 +2,16 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.AspNetCore.Http;
+
 
 namespace ZD_Article_Grabber
 {
-    public class Fetch(IMemoryCache cache, HttpClient client)
+    public class Fetch(IMemoryCache cache, HttpClient client, IHttpContextAccessor accessor)
     {
         private readonly IMemoryCache _cache = cache;
         private readonly HttpClient _client = client;
-
+        private readonly IHttpContextAccessor _contextAccessor = accessor;
 
         public async Task<string> FetchAndModifyHtmlAsync(string title)
         {
@@ -86,6 +88,10 @@ namespace ZD_Article_Grabber
         }
         private async Task<string> CacheCssOrJsFileAsync(string fileUrl, string fileType, string baseUrl)
         {
+            //get protocol and host domain
+            var protocol = _contextAccessor.HttpContext.Request.Scheme;
+            var host = _contextAccessor.HttpContext.Request.Host.Value;
+
             //Resolve full URL
             string resolvedUrl = new Uri(new Uri(baseUrl), fileUrl).ToString();
             string fileName = Path.GetFileName(resolvedUrl);
@@ -105,7 +111,7 @@ namespace ZD_Article_Grabber
             }
 
             // serve cached file from Memory via a controller endopoint
-            return $"/a/c/{fileType}/{Uri.EscapeDataString(fileName)}";
+            return $"{protocol}://{host}/a/c/{fileType}/{Uri.EscapeDataString(fileName)}";
         }
 
         
