@@ -13,7 +13,7 @@ namespace ZD_Article_Grabber.Controllers
         [HttpGet]
         public IActionResult GetCachedFile(string fileType, string fileName)
         {
-            string cacheKey = $"{fileType}_{Uri.UnescapeDataString(fileName)}";
+            string cacheKey = $"{fileType}_{fileName}";
 
             if ( _cache.TryGetValue(cacheKey, out string fileContent) )
             {

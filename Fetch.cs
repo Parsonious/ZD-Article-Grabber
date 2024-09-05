@@ -88,7 +88,8 @@ namespace ZD_Article_Grabber
         {
             //Resolve full URL
             string resolvedUrl = new Uri(new Uri(baseUrl), fileUrl).ToString();
-            string cacheKey =$"{fileType}_{resolvedUrl}";
+            string fileName = Path.GetFileName(resolvedUrl);
+            string cacheKey =$"{fileType}_{fileName}";
 
             // Check if CSS/JS content is already cached
             if( !_cache.TryGetValue(cacheKey,out string fileContent))
@@ -104,7 +105,7 @@ namespace ZD_Article_Grabber
             }
 
             // serve cached file from Memory via a controller endopoint
-            return $"/a/c/{fileType}/{Uri.EscapeDataString(Path.GetFileName(resolvedUrl))}";
+            return $"/a/c/{fileType}/{Uri.EscapeDataString(fileName)}";
         }
 
         
