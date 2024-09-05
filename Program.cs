@@ -1,12 +1,16 @@
+using ZD_Article_Grabber;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddHttpClient();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient<Fetch>();
+builder.Services.AddTransient<Fetch>();
 
 
 ConfigurationManager configuration = builder.Configuration;
