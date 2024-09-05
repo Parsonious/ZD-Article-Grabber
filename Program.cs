@@ -9,8 +9,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<Fetch>();
 builder.Services.AddTransient<Fetch>();
+
 
 
 ConfigurationManager configuration = builder.Configuration;
