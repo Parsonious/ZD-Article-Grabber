@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Http;
+using ZD_Article_Grabber.Common;
+using ZD_Article_Grabber.Classes;
 
 
 namespace ZD_Article_Grabber
@@ -16,31 +18,35 @@ namespace ZD_Article_Grabber
         public async Task<string> FetchAndModifyHtmlAsync(string title)
         {
             //normalize the title
-            string normalizedTitle = title.Replace(" ", "%20");
+           string normalizedTitle = NormalizeTitle(title);
             string cacheKey = $"content_{normalizedTitle}";
 
             //check if the html is cached
-            if ( !_cache.TryGetValue(cacheKey, out string htmlContent) )
+            if ( !_cache.TryGetFromCache(cacheKey, out string htmlContent) )
             {
                 //fetch the html if not cached
                 string url = $"https://parsonious.github.io/How-To/pages/{normalizedTitle}.html";
-                htmlContent = await GetContentFromUrlAsync(url);
 
-                if ( htmlContent == null )
-                {
-                    return "Page Not Found";
-                }
+                htmlContent = await _client.GetStringAsync(url) ?? throw new Exception("Page Not Found");
 
-                //modify the html to replace references to CSS/JS with cached versions
-                htmlContent = await ProcessHtmlAndAssetsAsync(htmlContent, url);
+                var content = new Content(_cache, _client, _contextAccessor, htmlContent);
+                await content.ProcessFilesAsync();
+
+                //update htmlContent variable with processed html
+                htmlContent = content.HtmlDoc.DocumentNode.OuterHtml;
 
                 // Cache the modified HTML for 10 mins
-                _cache.Set(cacheKey, htmlContent, new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(10)));
+                _cache.SetCache(cacheKey, htmlContent, TimeSpan.FromMinutes(10));
             }
 
             return htmlContent;
         }
-        
+        private static string NormalizeTitle(string title)
+        {
+            if(title.Contains(" "))
+            return title.Replace(" ", "%20");
+            else return title;
+        }
         private async Task<string> GetContentFromUrlAsync(string url)
         {
             try
