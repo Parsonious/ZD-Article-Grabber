@@ -18,7 +18,7 @@ namespace ZD_Article_Grabber.Classes
         };
         internal HtmlDocument HtmlDoc { get; private set; }
         internal ContentNodes Nodes { get; private set; }
-        public Content(IMemoryCache Cache, HttpClient Client, IHttpContextAccessor Accessor, string HtmlContent)
+        public Content(IMemoryCache Cache, HttpClient Client, IHttpContextAccessor Accessor, string HtmlContent, string sourceUrl)
         {
             ArgumentNullException.ThrowIfNull(Cache, nameof(Cache));
             ArgumentNullException.ThrowIfNull(Client, nameof(Client));
@@ -31,7 +31,7 @@ namespace ZD_Article_Grabber.Classes
             //Initialize the HTML Doc and ContentNodes
             HtmlDoc = new HtmlDocument();
             HtmlDoc.LoadHtml(HtmlContent);
-            Nodes = new ContentNodes(HtmlDoc, _xpathDictionary);
+            Nodes = new ContentNodes(HtmlDoc, _xpathDictionary, sourceUrl);
         }
 
         //process files for css, js, and Images

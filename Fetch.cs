@@ -9,11 +9,12 @@ using ZD_Article_Grabber.Classes;
 
 namespace ZD_Article_Grabber
 {
-    public class Fetch(IMemoryCache cache, HttpClient client, IHttpContextAccessor accessor)
+    public class Fetch(IMemoryCache cache, HttpClient client, IHttpContextAccessor accessor, String sourceUrl = "https://parsonious.github.io/How-To/pages/")
     {
         private readonly IMemoryCache _cache = cache;
         private readonly HttpClient _client = client;
         private readonly IHttpContextAccessor _contextAccessor = accessor;
+        private readonly String _sourceUrl = sourceUrl;
 
         public async Task<string> FetchAndModifyHtmlAsync(string title)
         {
@@ -25,11 +26,11 @@ namespace ZD_Article_Grabber
             if ( !_cache.TryGetFromCache(cacheKey, out string htmlContent) )
             {
                 //fetch the html if not cached
-                string url = $"https://parsonious.github.io/How-To/pages/{normalizedTitle}.html";
+                string pageUrl = $"{_sourceUrl}{normalizedTitle}.html";
 
-                htmlContent = await _client.GetStringAsync(url) ?? throw new Exception("Page Not Found");
+                htmlContent = await _client.GetStringAsync(pageUrl) ?? throw new Exception("Page Not Found");
 
-                var content = new Content(_cache, _client, _contextAccessor, htmlContent);
+                var content = new Content(_cache, _client, _contextAccessor, htmlContent, pageUrl);
                 await content.ProcessFilesAsync();
 
                 //update htmlContent variable with processed html

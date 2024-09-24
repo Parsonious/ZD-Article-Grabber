@@ -3,7 +3,7 @@
     public class VersionInfo
     {
         public const string Major = "1";
-        public const string Minor = "4";
-        public const string Patch = "5";
+        public const string Minor = "5";
+        public const string Patch = "3";
     }
 }
