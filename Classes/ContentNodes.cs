@@ -29,7 +29,12 @@ namespace ZD_Article_Grabber.Classes
 
         private async Task<string> ProcessFileAsync(HttpClient client, IMemoryCache cache, IHttpContextAccessor accessor, string fileUrl, string fileType)
         {
-            var resolvedUrl = new Uri(new Uri(accessor.HttpContext.Request.Host.Value), fileUrl).ToString();
+
+            var scheme = accessor.HttpContext.Request.Scheme;
+            var host = accessor.HttpContext.Request.Host;
+            var baseUrl = $"{scheme}://{host}";
+
+            var resolvedUrl = new Uri(new Uri(baseUrl), fileUrl).ToString();
             var fileName = Path.GetFileName(resolvedUrl);
 
             string cacheKey = $"{fileType}_{fileName}";
@@ -45,8 +50,6 @@ namespace ZD_Article_Grabber.Classes
                 }
             }
 
-            var scheme = accessor.HttpContext.Request.Scheme;
-            var host = accessor.HttpContext.Request.Host;
 
             return $"{scheme}://{host}/a/c/{fileType}/{Uri.EscapeDataString(fileName)}";
         }
