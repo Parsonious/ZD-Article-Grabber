@@ -9,12 +9,15 @@ namespace ZD_Article_Grabber.Classes
         public string FileUrl { get; private set; }
         public string Type { get; private set; }
         public string Content { get; private set; }
+        public string BaseUrl { get; private set; }
 
-        public Node(HtmlNode htmlNode)
+        public Node(HtmlNode htmlNode, string baseUrl)
         {
             ArgumentNullException.ThrowIfNull(htmlNode);
+            ArgumentNullException.ThrowIfNull(baseUrl);
             Xpath = htmlNode.XPath;
             HtmlNode = htmlNode;
+            BaseUrl = baseUrl;
             FileUrl = GetFileUrl();
             Type = GetNodeType();
         }
@@ -27,7 +30,19 @@ namespace ZD_Article_Grabber.Classes
             {
                 throw new ArgumentException("FileUrl cannot be empty");
             }
-            return fileUrl;
+
+            //Resolve the file URL against the base URL
+            if(Uri.TryCreate(fileUrl, UriKind.Absolute, out Uri resolvedUri) )
+            {
+                //file url is already an Absolute Url (i.e. fully qualified)
+                return resolvedUri.ToString();
+            }
+            else
+            {
+                //Resolve relative URL against baseUrl
+                resolvedUri = new Uri(new Uri(BaseUrl), fileUrl);
+                return resolvedUri.ToString();
+            }
         }
 
         //determine the type of node (css, js, img) based on tag name and attributes

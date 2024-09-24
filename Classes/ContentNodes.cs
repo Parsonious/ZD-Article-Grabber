@@ -7,13 +7,13 @@ namespace ZD_Article_Grabber.Classes
     {
         public List<Node> Nodes { get; private set; }
         
-        public ContentNodes(HtmlDocument doc, Dictionary<string, string> xpathDictionary)
+        public ContentNodes(HtmlDocument doc, Dictionary<string, string> xpathDictionary, string baseUrl)
         {
             ArgumentNullException.ThrowIfNull(doc,nameof(doc));
                                   //get xpath search text from xpathDictionary
             Nodes = doc.DocumentNode.SelectNodes(string.Join("|", xpathDictionary.Keys))
                 //get HtmlNode info from Node type
-                ?.Select(htmlNode => new Node(htmlNode)).ToList()
+                ?.Select(htmlNode => new Node(htmlNode, baseUrl)).ToList()
                 ?? new List<Node>();
         }
 
@@ -22,26 +22,25 @@ namespace ZD_Article_Grabber.Classes
         {
             foreach ( var node in Nodes )
             {
-                string localPath = await ProcessFileAsync(client, cache, accessor, node.FileUrl, node.Type);
+                string localPath = await ProcessFileAsync(client, cache, accessor, node);
                 node.SetLocalPath(localPath);
             }
         }
 
-        private async Task<string> ProcessFileAsync(HttpClient client, IMemoryCache cache, IHttpContextAccessor accessor, string fileUrl, string fileType)
+        private async Task<string> ProcessFileAsync(HttpClient client, IMemoryCache cache, IHttpContextAccessor accessor,Node node)
         {
 
             var scheme = accessor.HttpContext.Request.Scheme;
             var host = accessor.HttpContext.Request.Host;
-            var baseUrl = $"{scheme}://{host}";
-
-            var resolvedUrl = new Uri(new Uri(baseUrl), fileUrl).ToString();
-            var fileName = Path.GetFileName(resolvedUrl);
+            var fileType = node.Type;
+            var fileUrl = node.FileUrl;
+            var fileName = Path.GetFileName(new Uri(fileUrl).LocalPath);
 
             string cacheKey = $"{fileType}_{fileName}";
 
             if ( !cache.TryGetValue(cacheKey, out byte[] fileContent) )
             {
-                var response = await client.GetAsync(resolvedUrl);
+                var response = await client.GetAsync(fileUrl);
                 if ( response.IsSuccessStatusCode )
                 {
                     fileContent = await response.Content.ReadAsByteArrayAsync();
