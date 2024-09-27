@@ -17,40 +17,109 @@ namespace ZD_Article_Grabber.Classes
                 ?? new List<Node>();
         }
 
-        //process and apply the local paths
-        public async Task ProcessNodesAsync(HttpClient client, IMemoryCache cache, IHttpContextAccessor accessor)
+        //process and apply the local paths in parallel
+        public async Task ProcessNodesAsync(IMemoryCache cache, IHttpContextAccessor accessor, IHttpClientFactory clientFactory)
         {
-            foreach ( var node in Nodes )
-            {
-                string localPath = await ProcessFileAsync(client, cache, accessor, node);
-                node.SetLocalPath(localPath);
-            }
-        }
-
-        private async Task<string> ProcessFileAsync(HttpClient client, IMemoryCache cache, IHttpContextAccessor accessor,Node node)
-        {
-
             var scheme = accessor.HttpContext.Request.Scheme;
-            var host = accessor.HttpContext.Request.Host;
+            var host = accessor.HttpContext.Request.Host.Value;
+
+            var tasks = Nodes.Select(async node =>
+            {
+                try
+                {
+                    string localPath = await ProcessFileAsync(cache, scheme, host, clientFactory, node);
+                    node.SetLocalPath(localPath);
+                }
+                catch ( Exception ex )
+                {
+                    string defaultPath = $"{scheme}://{host}/a/c/{node.Type}/default";
+                    node.SetLocalPath(defaultPath);
+                }
+            });
+
+            await Task.WhenAll(tasks);
+        }
+        private async Task<string> ProcessFileAsync(IMemoryCache cache, string scheme, string host, IHttpClientFactory clientFactory, Node node)
+        {
+            var client = clientFactory.CreateClient();
+
             var fileType = node.Type;
             var fileUrl = node.FileUrl;
             var fileName = Path.GetFileName(new Uri(fileUrl).LocalPath);
 
             string cacheKey = $"{fileType}_{fileName}";
-
-            if ( !cache.TryGetValue(cacheKey, out byte[] fileContent) )
+            try
             {
-                var response = await client.GetAsync(fileUrl);
-                if ( response.IsSuccessStatusCode )
+                if ( !cache.TryGetValue(cacheKey, out byte[] fileContent) )
                 {
-                    fileContent = await response.Content.ReadAsByteArrayAsync();
-                    var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(10));
-                    cache.Set(cacheKey, fileContent, cacheEntryOptions);
+                    var response = await client.GetAsync(fileUrl);
+                    if ( response.IsSuccessStatusCode )
+                    {
+                        fileContent = await response.Content.ReadAsByteArrayAsync();
+                        var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(10));
+                        cache.Set(cacheKey, fileContent, cacheEntryOptions);
+                    }
+                    else
+                    {
+                        fileContent = await GetDefaultResourceAsync(cache, fileType);
+                        cache.Set(cacheKey, fileContent);
+                    }
                 }
+                return $"{scheme}://{host}/a/c/{fileType}/{Uri.EscapeDataString(fileName)}";
+            }
+            catch ( Exception ex )
+            {
+                // Use default resource
+                string defaultFileName = GetDefaultFileName(fileType);
+                string defaultCacheKey = $"{fileType}_{defaultFileName}";
+
+                if ( !cache.TryGetValue(defaultCacheKey, out byte[] defaultFileContent) )
+                {
+                    defaultFileContent = await GetDefaultResourceAsync(cache, fileType);
+                    cache.Set(defaultCacheKey, defaultFileContent);
+                }
+
+                return $"{scheme}://{host}/a/c/{fileType}/{Uri.EscapeDataString(defaultFileName)}";
+
+            }
+        }
+        private async Task<byte[]> GetDefaultResourceAsync(IMemoryCache cache, string fileType)
+        {
+            string defaultCacheKey = $"{fileType}_default";
+
+            if ( cache.TryGetValue(defaultCacheKey, out byte[] defaultContent) )
+            {
+                return defaultContent;
             }
 
+            string defaultFileName = GetDefaultFileName(fileType);
 
-            return $"{scheme}://{host}/a/c/{fileType}/{Uri.EscapeDataString(fileName)}";
+            string defaultFilePath = Path.Combine(AppContext.BaseDirectory, "Defaults", defaultFileName);
+
+            if ( !File.Exists(defaultFilePath) )
+            {
+                throw new FileNotFoundException($"Default resource not found: {defaultFilePath}");
+            }
+
+            defaultContent = await File.ReadAllBytesAsync(defaultFilePath);
+
+            // Cache the default content
+            cache.Set(defaultCacheKey, defaultContent, new MemoryCacheEntryOptions
+            {
+                SlidingExpiration = TimeSpan.FromHours(1)
+            });
+
+            return defaultContent;
+        }
+        private static string GetDefaultFileName(string fileType)
+        {
+            return fileType switch
+            {
+                "css" => "default.css",
+                "js" => "default.js",
+                "img" => "default.png",
+                _ => throw new InvalidOperationException($"Unsupported File Type: {fileType}")
+            };
         }
     }
 }

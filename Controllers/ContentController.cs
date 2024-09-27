@@ -16,7 +16,7 @@ namespace ZD_Article_Grabber
         [HttpGet("{title}")]
         public async Task<IActionResult> GetContent(string title)
         {
-            var htmlContent = await _fetchService.FetchAndModifyHtmlAsync(title);
+            var htmlContent = await _fetchService.FetchHtmlAsync(title);
             if ( htmlContent == null )
             {
                 return NotFound("Page Not Found");

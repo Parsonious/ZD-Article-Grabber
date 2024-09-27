@@ -18,9 +18,10 @@ namespace ZD_Article_Grabber.Controllers
 
             if ( _cache.TryGetValue(cacheKey, out byte[] fileContent) )
             {
-                string contentType = fileType == "css" ? "text/css" : "application/javascript";
+                string contentType = GetContentType(fileName);
                 return File(fileContent, contentType);
             }
+
             return NotFound("File not found in cache");
         }
     
