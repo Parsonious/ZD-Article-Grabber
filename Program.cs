@@ -10,7 +10,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddHttpClient<Fetch>();
+builder.Services.AddHttpClient();
 builder.Services.AddTransient<Fetch>();
 
 
