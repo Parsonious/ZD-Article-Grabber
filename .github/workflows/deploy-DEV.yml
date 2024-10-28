@@ -72,6 +72,7 @@ jobs:
           # Run the new container on port 8081
           if ! output=$(docker run -d -p 8081:80 -p 8444:443 \
           --name $container_name \
+          -v /home/parsonious/bepio/api/source:/api/static-files \
           -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
           -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
           ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:${{ env.IMAGE_TAG }} 2>&1); then
