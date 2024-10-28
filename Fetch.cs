@@ -5,31 +5,48 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Http;
 using ZD_Article_Grabber.Common;
 using ZD_Article_Grabber.Classes;
+using System.IO;
+using Microsoft.Extensions.Options;
 
 
 namespace ZD_Article_Grabber
 {
-    public class Fetch(IMemoryCache cache, IHttpClientFactory clientFactory, IHttpContextAccessor accessor, String sourceUrl = "https://parsonious.github.io/How-To/pages/")
+    public class Fetch(IMemoryCache cache, 
+        IHttpClientFactory clientFactory, 
+        IHttpContextAccessor accessor,
+        IOptions<AppSetPaths> defaultPaths)
     {
         private readonly IMemoryCache _cache = cache;
         private readonly IHttpClientFactory _clientFactory = clientFactory;
         private readonly IHttpContextAccessor _contextAccessor = accessor;
-        private readonly String _sourceUrl = sourceUrl;
+        private readonly AppSetPaths _defaultPaths = defaultPaths.Value;
 
         public async Task<string> FetchHtmlAsync(string title)
         {
             //normalize the title
-           string normalizedTitle = NormalizeTitle(title);
-           string cacheKey = $"content_{normalizedTitle}";
+           string normalizedTitle = NormalizeTitle(title),
+                  cacheKey = $"content_{normalizedTitle}",
+                  localFilePath = Path.Combine(_defaultPaths.HtmlFilesPath, title),
+                  pageUrl = $"{_defaultPaths.UrlPath}{normalizedTitle}.html";
 
             //check if the html is cached
             if ( !_cache.TryGetFromCache(cacheKey, out string htmlContent) )
-            {
-                var client = _clientFactory.CreateClient();
-                //fetch the html if not cached
-                string pageUrl = $"{_sourceUrl}{normalizedTitle}.html";
+            {     
 
-                htmlContent = await client.GetStringAsync(pageUrl) ?? throw new Exception("Page Not Found");
+                if ( File.Exists(localFilePath) ) //if local file is found
+                {
+                    //read content from local file
+                    htmlContent = await File.ReadAllTextAsync(localFilePath);
+                }
+                else //else check for file at _sourceUrl
+                {
+                    var client = _clientFactory.CreateClient();
+                    //fetch the html if not cached
+
+
+                    htmlContent = await client.GetStringAsync(pageUrl) ?? throw new Exception("Page Not Found");
+
+                }
 
                 var content = new Content(_cache,_clientFactory, _contextAccessor, htmlContent, pageUrl);
                 await content.ProcessFilesAsync();
@@ -45,7 +62,7 @@ namespace ZD_Article_Grabber
         }
         private static string NormalizeTitle(string title)
         {
-            if(title.Contains(" "))
+            if(title.Contains(' '))
             return title.Replace(" ", "%20");
             else return title;
         }

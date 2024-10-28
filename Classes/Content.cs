@@ -14,7 +14,9 @@ namespace ZD_Article_Grabber.Classes
         {
             { "//link[@rel='stylesheet' and @href]", "css" },
             { "//script[@src]", "js" },
-            { "//img[@src]", "img" }
+            { "//img[@src]", "img" },
+            { "//a[@href][contains(@href, '.sql')]", "sql" },
+            { "//a[@href][contains(@href, '.ps1')]", "ps1" }
         };
         internal HtmlDocument HtmlDoc { get; private set; }
         internal ContentNodes Nodes { get; private set; }
@@ -34,7 +36,7 @@ namespace ZD_Article_Grabber.Classes
             Nodes = new ContentNodes(HtmlDoc, _xpathDictionary, sourceUrl);
         }
 
-        //process files for css, js, and Images
+        //process files for css, js, sql, ps1 and Images
         public async Task ProcessFilesAsync()
         {
             await Nodes.ProcessNodesAsync(_cache,_accessor,_clientFactory);
