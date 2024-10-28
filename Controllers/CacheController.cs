@@ -30,7 +30,20 @@ namespace ZD_Article_Grabber.Controllers
             var provider = new FileExtensionContentTypeProvider();
             if ( !provider.TryGetContentType(fileName, out string contentType) )
             {
-                contentType = "application/octet-stream"; //default content type
+                // Manually handle known types
+                string extension = Path.GetExtension(fileName).ToLowerInvariant();
+                switch ( extension )
+                {
+                    case ".sql":
+                        contentType = "application/sql";
+                        break;
+                    case ".ps1":
+                        contentType = "application/x-powershell";
+                        break;
+                    default:
+                        contentType = "application/octet-stream"; // default content type
+                        break;
+                }
             }
             return contentType;
         }

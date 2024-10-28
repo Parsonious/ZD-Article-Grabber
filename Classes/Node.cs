@@ -8,7 +8,6 @@ namespace ZD_Article_Grabber.Classes
         public string Xpath { get; private set; }
         public string FileUrl { get; private set; }
         public string Type { get; private set; }
-        public string Content { get; private set; }
         public string BaseUrl { get; private set; }
 
         public Node(HtmlNode htmlNode, string baseUrl)
@@ -50,14 +49,23 @@ namespace ZD_Article_Grabber.Classes
         {
             string tagName = HtmlNode.Name.ToLower(); // Normalize to lowercase for comparison
 
-            return tagName switch
+            if ( tagName == "link" && HtmlNode.GetAttributeValue("rel", "") == "stylesheet" )
+                return "css";
+            else if ( tagName == "script" )
+                return "js";
+            else if ( tagName == "img" )
+                return "img";
+            else if ( tagName == "a" )
             {
-                "link" when HtmlNode.GetAttributeValue("rel", "") == "stylesheet" => "css",
-                "script" => "js",
-                "img" => "img",
-                _ => throw new InvalidOperationException($"Unknown type for node: {HtmlNode.Name}")
-            };
+                string href = HtmlNode.GetAttributeValue("href", "");
+                if ( href.EndsWith(".sql", StringComparison.OrdinalIgnoreCase) )
+                    return "sql";
+                else if ( href.EndsWith(".ps1", StringComparison.OrdinalIgnoreCase) )
+                    return "ps1";
+            }
+            throw new InvalidOperationException($"Unknown type for node: {HtmlNode.Name}");
         }
+
         //set the local path for the node 
         public void SetLocalPath(string localPath)
         {

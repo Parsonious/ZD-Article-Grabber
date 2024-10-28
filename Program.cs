@@ -1,4 +1,5 @@
 using ZD_Article_Grabber;
+using ZD_Article_Grabber.Classes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,7 +13,8 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 builder.Services.AddTransient<Fetch>();
-
+// Register the PathsSettings configuration
+builder.Services.Configure<AppSetPaths>(builder.Configuration.GetSection("Paths"));
 
 
 ConfigurationManager configuration = builder.Configuration;

@@ -41,7 +41,7 @@ namespace ZD_Article_Grabber.Classes
         }
         private async Task<string> ProcessFileAsync(IMemoryCache cache, string scheme, string host, IHttpClientFactory clientFactory, Node node)
         {
-            var client = clientFactory.CreateClient();
+
 
             var fileType = node.Type;
             var fileUrl = node.FileUrl;
@@ -52,24 +52,39 @@ namespace ZD_Article_Grabber.Classes
             {
                 if ( !cache.TryGetValue(cacheKey, out byte[] fileContent) )
                 {
-                    var response = await client.GetAsync(fileUrl);
-                    if ( response.IsSuccessStatusCode )
+                    /*Make this it's own method there's too many ifs in here*/
+                    //file not cached try to load from local
+                    string baseDirectory = "basePath";
+                    string localFilePath = Path.Combine(baseDirectory, fileType, fileName);
+                    if ( System.IO.File.Exists(localFilePath) )
                     {
-                        fileContent = await response.Content.ReadAsByteArrayAsync();
-                        var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(10));
-                        cache.Set(cacheKey, fileContent, cacheEntryOptions);
+                        //read local async
+                        fileContent = await System.IO.File.ReadAllBytesAsync(localFilePath);
                     }
                     else
-                    {
-                        fileContent = await GetDefaultResourceAsync(cache, fileType);
-                        cache.Set(cacheKey, fileContent);
+                    {   /*make this its own method as well. Again the cognitive complexity of this is too high*/
+                        var client = clientFactory.CreateClient();
+                        var response = await client.GetAsync(fileUrl);
+                        if ( response.IsSuccessStatusCode )
+                        {
+                            fileContent = await response.Content.ReadAsByteArrayAsync();
+                        }
+                        else //local and remote fetch failed serve the default files
+                        {
+                            fileContent = await GetDefaultResourceAsync(cache, fileType);
+                            cache.Set(cacheKey, fileContent);
+                        }
                     }
+                    // Cache the file content
+                    var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(10));
+                    cache.Set(cacheKey, fileContent, cacheEntryOptions);
+
                 }
                 return $"{scheme}://{host}/a/c/{fileType}/{Uri.EscapeDataString(fileName)}";
             }
             catch ( Exception ex )
             {
-                // Use default resource
+                // Something broke serve default resources
                 string defaultFileName = GetDefaultFileName(fileType);
                 string defaultCacheKey = $"{fileType}_{defaultFileName}";
 
@@ -118,6 +133,8 @@ namespace ZD_Article_Grabber.Classes
                 "css" => "default.css",
                 "js" => "default.js",
                 "img" => "default.png",
+                "sql" => "default.sql",
+                "ps1" => "default.ps1",
                 _ => throw new InvalidOperationException($"Unsupported File Type: {fileType}")
             };
         }
