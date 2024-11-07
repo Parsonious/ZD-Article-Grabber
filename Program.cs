@@ -1,24 +1,36 @@
-using ZD_Article_Grabber;
+using Microsoft.Extensions.Options;
+using ZD_Article_Grabber.Interfaces;
+using ZD_Article_Grabber.Services;
+using ZD_Article_Grabber.Types;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 
+//Defaults
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
+
+//HTTP
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
+
+//Singeltons
+builder.Services.AddSingleton<IConfigOptions>(sp => sp.GetRequiredService<IOptions<ConfigOptions>>().Value);
+builder.Services.AddSingleton<IResourceFetcher, ResourceFetcher>();
+builder.Services.Configure<ConfigOptions>(builder.Configuration);
+
+
+//Transients
 builder.Services.AddTransient<Fetch>();
-
-
 
 ConfigurationManager configuration = builder.Configuration;
 IWebHostEnvironment environment = builder.Environment;
 
-builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                       .AddJsonFile($"appsettings.{environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
 
@@ -64,7 +76,6 @@ if ( app.Environment.IsDevelopment() )
 }
 
 app.UseHttpsRedirection();
-//app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "AllowSpecificOrigins"); //if app env is dev cors == allowall else == allowspecificorigins
 app.UseCors("AllowSpecificOrigins");
 app.UseRouting();
 app.UseAuthorization();
