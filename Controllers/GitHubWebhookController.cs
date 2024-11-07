@@ -48,7 +48,7 @@ namespace ZD_Article_Grabber.Controllers
                     {
                         await UpdateRepositoryAsync();
                     }
-                    catch ( Exception ex ) 
+                    catch ( Exception ) 
                     {
                         return StatusCode(500, "Failed to update repository");
                     }

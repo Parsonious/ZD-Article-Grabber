@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using System.Threading.Tasks;
+using ZD_Article_Grabber.Services;
 
 namespace ZD_Article_Grabber
 {

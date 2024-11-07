@@ -1,7 +1,10 @@
 ﻿using HtmlAgilityPack;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using ZD_Article_Grabber.Interfaces;
+using ZD_Article_Grabber.Services;
 
-namespace ZD_Article_Grabber.Classes
+namespace ZD_Article_Grabber.Types
 {
     public class Content
     {
@@ -9,23 +12,24 @@ namespace ZD_Article_Grabber.Classes
         private readonly IMemoryCache _cache;
         private readonly IHttpClientFactory _clientFactory;
         private readonly IHttpContextAccessor _accessor;
-        
-        private readonly Dictionary<string, string> _xpathDictionary = new Dictionary<string, string>()
-        {
-            { "//link[@rel='stylesheet' and @href]", "css" },
-            { "//script[@src]", "js" },
-            { "//img[@src]", "img" },
-            { "//a[@href][contains(@href, '.sql')]", "sql" },
-            { "//a[@href][contains(@href, '.ps1')]", "ps1" }
-        };
+        private readonly IConfigOptions _settings;
+        private readonly IResourceFetcher _resourceFetcher;
         internal HtmlDocument HtmlDoc { get; private set; }
         internal ContentNodes Nodes { get; private set; }
-        public Content(IMemoryCache Cache, IHttpClientFactory ClientFactory, IHttpContextAccessor Accessor, string HtmlContent, string sourceUrl)
+        public Content
+            (IMemoryCache Cache, 
+            IHttpClientFactory ClientFactory, 
+            IHttpContextAccessor Accessor, 
+            string HtmlContent,
+            string sourceUrl,
+            IConfigOptions settings,
+            IResourceFetcher resourceFetcher)
         {
             ArgumentNullException.ThrowIfNull(Cache, nameof(Cache));
             ArgumentNullException.ThrowIfNull(ClientFactory, nameof(ClientFactory));
             ArgumentNullException.ThrowIfNull(Accessor, nameof(Accessor));
             ArgumentException.ThrowIfNullOrWhiteSpace(HtmlContent, nameof(HtmlContent));
+
             _cache = Cache;
             _clientFactory = ClientFactory;
             _accessor = Accessor;
@@ -33,13 +37,13 @@ namespace ZD_Article_Grabber.Classes
             //Initialize the HTML Doc and ContentNodes
             HtmlDoc = new HtmlDocument();
             HtmlDoc.LoadHtml(HtmlContent);
-            Nodes = new ContentNodes(HtmlDoc, _xpathDictionary, sourceUrl);
+            Nodes = new ContentNodes(HtmlDoc, sourceUrl, settings, resourceFetcher);
         }
 
         //process files for css, js, sql, ps1 and Images
         public async Task ProcessFilesAsync()
         {
-            await Nodes.ProcessNodesAsync(_cache,_accessor,_clientFactory);
+            await Nodes.ProcessNodesAsync(_accessor);
         }
 
     }
