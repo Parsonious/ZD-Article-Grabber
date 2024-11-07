@@ -1,4 +1,4 @@
-namespace ZD_Article_Grabber.Classes
+namespace ZD_Article_Grabber.Types
 {
     public class HtmlContent
     {

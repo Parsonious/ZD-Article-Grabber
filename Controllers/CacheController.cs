@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Caching.Memory;
+using ZD_Article_Grabber.Helpers;
 
 namespace ZD_Article_Grabber.Controllers
 {
@@ -14,7 +15,7 @@ namespace ZD_Article_Grabber.Controllers
         [HttpGet]
         public IActionResult GetCachedFile(string fileType, string fileName)
         {
-            string cacheKey = $"{fileType}_{fileName}";
+            string cacheKey = CacheHelper.GenerateCacheKey(fileType,fileName);
 
             if ( _cache.TryGetValue(cacheKey, out byte[] fileContent) )
             {
@@ -25,27 +26,25 @@ namespace ZD_Article_Grabber.Controllers
             return NotFound("File not found in cache");
         }
     
-        private string GetContentType(string fileName)
+        private static string GetContentType(string fileName)
         {
             var provider = new FileExtensionContentTypeProvider();
             if ( !provider.TryGetContentType(fileName, out string contentType) )
             {
                 // Manually handle known types
                 string extension = Path.GetExtension(fileName).ToLowerInvariant();
-                switch ( extension )
-                {
-                    case ".sql":
-                        contentType = "application/sql";
-                        break;
-                    case ".ps1":
-                        contentType = "application/x-powershell";
-                        break;
-                    default:
-                        contentType = "application/octet-stream"; // default content type
-                        break;
-                }
+                contentType = GetTypeByExtension(extension);
             }
             return contentType;
+        }
+        private static string GetTypeByExtension(string extension)
+        {
+            return extension switch
+            {
+                ".sql" => "application/sql",
+                ".psq" => "application/x-powershell",
+                _ => "application/octet-stream",
+            };
         }
     }
 }
