@@ -1,7 +1,9 @@
-﻿namespace ZD_Article_Grabber.Interfaces
+﻿using ZD_Article_Grabber.Resources;
+
+namespace ZD_Article_Grabber.Interfaces
 {
     public interface IResourceFetcher
     {
-        Task<byte[]> FetchResourceAsync(string fileType, string fileName, string remoteUrl);
+        Task<ResourceResult> FetchResourceAsync(ResourceID iD);
     }
 }
