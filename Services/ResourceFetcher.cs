@@ -1,66 +1,60 @@
-﻿using System.IO;
-using System.Net.Http;
-using System.Threading.Tasks;
+﻿
 using Microsoft.Extensions.Caching.Memory;
-using ZD_Article_Grabber.Helpers;
 using ZD_Article_Grabber.Interfaces;
+using ZD_Article_Grabber.Resources;
 using ZD_Article_Grabber.Types;
+
 
 namespace ZD_Article_Grabber.Services
 {
-    public class ResourceFetcher : IResourceFetcher
+    public class ResourceFetcher(Dependencies dependencies) : IResourceFetcher
     {
-        private readonly IMemoryCache _cache;
-        private readonly IHttpClientFactory _clientFactory;
-        private readonly IConfigOptions _configOptions;
-
-        public ResourceFetcher(IMemoryCache cache, IHttpClientFactory clientFactory, IConfigOptions configOptions)
+        private readonly Dependencies _dependencies = dependencies;
+        public async Task<ResourceResult> FetchResourceAsync(ResourceID id)
         {
-            _cache = cache;
-            _clientFactory = clientFactory;
-            _configOptions = configOptions;
-        }
-
-        public async Task<byte[]> FetchResourceAsync(string fileType, string fileName, string remoteUrl)
-        {
-            string cacheKey = CacheHelper.GenerateCacheKey(fileType, fileName);
-
-            if ( _cache.TryGetValue(cacheKey, out byte[] fileContent) )
+            byte[] content = []; //initialize content to empty byte array for ResourceResult
+            ResourceResult resource = new(id, content);
+            Console.WriteLine($"Cache Stats: {_dependencies.Cache.GetCurrentStatistics()}");
+            if ( _dependencies.Cache.TryGetValue(id.CacheKey, out byte[] fileContent) )
             {
-                return fileContent;
+                resource.Content = fileContent;
+                resource.Url = id.ResourceUrl; //if this was already cached then the correct url was already set
+
+                return resource;
+            }
+            if ( File.Exists(id.LocalUrl) )
+            {
+                resource.Content = await File.ReadAllBytesAsync(id.LocalUrl);
+                resource.Url = id.LocalUrl; 
+            }
+            else // Fetch from remote URL
+            {
+                resource.Content = await FetchRemoteResourceAsync(id.RemoteUrl);
+                resource.Url = id.RemoteUrl;
             }
 
-            // Try fetching from local path
-            string localFilePath = Path.Combine(_configOptions.Paths.ResourceFilesPath, fileType, fileName);
-
-            if ( File.Exists(localFilePath) )
+            //Fallback to default resource if no content is found
+            if ( resource.Content == null || resource.Content.Length == 0 )
             {
-                fileContent = await File.ReadAllBytesAsync(localFilePath);
-            }
-            else
-            {
-                // Fetch from remote URL
-                fileContent = await FetchRemoteResourceAsync(remoteUrl);
+                resource.Content = await GetDefaultResourceAsync(id); //pass enitre ResourceID in order to set ResourceUrl to default file path
             }
 
-            if ( fileContent == null )
-            {
-                // Fetch default resource
-                fileContent = await GetDefaultResourceAsync(fileType);
-            }
 
             // Cache the content
-            var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(10));
-            _cache.Set(cacheKey, fileContent, cacheEntryOptions);
+            //var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(10));
+            //_cache.Set( resource.Id.CacheKey, resource.Content, cacheEntryOptions);
+            var cacheEntry = _dependencies.Cache.CreateEntry(id.CacheKey);
+            cacheEntry.Value = resource.Content; // Set the value of the cache entry
+            cacheEntry.SetSlidingExpiration(TimeSpan.FromMinutes(10));
+            cacheEntry.Dispose(); // Ensure the entry is committed to the cache
 
-            return fileContent;
+            return resource;
         }
-
         private async Task<byte[]> FetchRemoteResourceAsync(string url)
         {
             try
             {
-                var client = _clientFactory.CreateClient();
+                var client = _dependencies.ClientFactory.CreateClient();
                 var response = await client.GetAsync(url);
 
                 if ( response.IsSuccessStatusCode )
@@ -73,30 +67,30 @@ namespace ZD_Article_Grabber.Services
                 Console.WriteLine($"Failed to fetch remote resource '{url}': {ex.Message}");
             }
 
-            return null;
+            return []; // Return an empty byte array if fetching fails
         }
 
-        private async Task<byte[]> GetDefaultResourceAsync(string fileType)
+        private async Task<byte[]> GetDefaultResourceAsync(ResourceID iD)
         {
-            string defaultFileName = GetDefaultFileName(fileType);
-            string defaultFilePath = Path.Combine(AppContext.BaseDirectory, "Defaults", defaultFileName);
+            string defaultFileName = GetDefaultFileName(iD.Type);
+            string defaultFilePath = Path.Combine(_dependencies.Settings.Paths.ResourceFilesPath, iD.Type.ToString().ToLower(), defaultFileName);
 
             if ( !File.Exists(defaultFilePath) )
             {
                 throw new FileNotFoundException($"Default resource not found: {defaultFilePath}");
             }
-
+            iD.ResourceUrl = defaultFilePath;
             return await File.ReadAllBytesAsync(defaultFilePath);
         }
 
-        private string GetDefaultFileName(string fileType)
+        private string GetDefaultFileName(ResourceType type)
         {
-            if ( _configOptions.Files.DefaultFiles.TryGetValue(fileType, out var defaultFileName) )
+            if ( _dependencies.Settings.Files.DefaultFiles.TryGetValue(type.ToString().ToLower(), out var defaultFileName) )
             {
                 return defaultFileName;
             }
 
-            throw new InvalidOperationException($"Unsupported File Type: {fileType}");
+            throw new InvalidOperationException($"Unsupported File Type: {type}");
         }
     }
 

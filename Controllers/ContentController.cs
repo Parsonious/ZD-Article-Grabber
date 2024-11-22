@@ -2,16 +2,15 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using System.Threading.Tasks;
-using ZD_Article_Grabber.Services;
+using ZD_Article_Grabber.Interfaces;
 
-namespace ZD_Article_Grabber
+namespace ZD_Article_Grabber.Controllers
 {
     [Route("a/p")]
     [ApiController]
-    public class ContentController(IMemoryCache cache, Fetch fetchService) : ControllerBase //primary constructor used
+    public class ContentController(IContentFetcher fetchService) : ControllerBase
     {
-        private readonly IMemoryCache _cache = cache;
-        private readonly Fetch _fetchService = fetchService;
+        private readonly IContentFetcher _fetchService = fetchService;
 
 
         [HttpGet("{title}")]

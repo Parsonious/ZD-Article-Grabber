@@ -1,0 +1,23 @@
+using Microsoft.Extensions.Caching.Memory;
+using ZD_Article_Grabber.Interfaces;
+using ZD_Article_Grabber.Resources.Pages;
+
+namespace ZD_Article_Grabber.Services
+{
+    public class ContentFetcher(IMemoryCache cache, IPageBuilder pageBuilder) : IContentFetcher
+    {
+        private readonly IMemoryCache _cache = cache;
+        private readonly IPageBuilder _pageBuilder = pageBuilder;
+
+        public async Task<string> FetchHtmlAsync(string title)
+        {
+            Page page = await _pageBuilder.BuildPageAsync(title);
+
+            // Cache the page
+            _cache.Set(page.Id.CacheKey, page.Html);
+
+            //return the html of the page
+            return page.Html;
+        }
+    }
+}

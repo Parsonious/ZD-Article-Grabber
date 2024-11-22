@@ -15,9 +15,9 @@ namespace ZD_Article_Grabber.Controllers
         [HttpGet]
         public IActionResult GetCachedFile(string fileType, string fileName)
         {
-            string cacheKey = CacheHelper.GenerateCacheKey(fileType,fileName);
+            string cacheKey = CacheHelper.GenerateCacheKey(fileType, fileName);
 
-            if ( _cache.TryGetValue(cacheKey, out byte[] fileContent) )
+            if ( _cache.TryGetValue(cacheKey, out byte[] fileContent) && fileContent != null)
             {
                 string contentType = GetContentType(fileName);
                 return File(fileContent, contentType);
@@ -42,7 +42,7 @@ namespace ZD_Article_Grabber.Controllers
             return extension switch
             {
                 ".sql" => "application/sql",
-                ".psq" => "application/x-powershell",
+                ".ps1" => "application/x-powershell",
                 _ => "application/octet-stream",
             };
         }
