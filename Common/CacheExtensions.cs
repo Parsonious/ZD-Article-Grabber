@@ -6,7 +6,7 @@ namespace ZD_Article_Grabber.Common
     {
         public static bool TryGetFromCache<T>(this IMemoryCache cache, string cacheKey, out T value)
         {
-            if ( cache.TryGetValue(cacheKey, out object cachedValue) )
+            if ( cache.TryGetValue(cacheKey, out object? cachedValue) )
             {
                 value = (T) cachedValue;
                 return true;
