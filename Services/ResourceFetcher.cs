@@ -40,9 +40,7 @@ namespace ZD_Article_Grabber.Services
             }
 
 
-            // Cache the content
-            //var cacheEntryOptions = new MemoryCacheEntryOptions().SetSlidingExpiration(TimeSpan.FromMinutes(10));
-            //_cache.Set( resource.Id.CacheKey, resource.Content, cacheEntryOptions);
+            // Cache the content the long way
             var cacheEntry = _dependencies.Cache.CreateEntry(id.CacheKey);
             cacheEntry.Value = resource.Content; // Set the value of the cache entry
             cacheEntry.SetSlidingExpiration(TimeSpan.FromMinutes(10));
