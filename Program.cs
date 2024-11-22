@@ -1,12 +1,10 @@
 using Microsoft.Extensions.Options;
 using ZD_Article_Grabber.Interfaces;
 using ZD_Article_Grabber.Services;
+using ZD_Article_Grabber.Builders;
 using ZD_Article_Grabber.Types;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-
 
 //Defaults
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -14,18 +12,23 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMemoryCache();
 
+//Config
+builder.Services.Configure<ZD_Article_Grabber.Config.ConfigOptions>(builder.Configuration);
+
 //HTTP
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 
 //Singeltons
-builder.Services.AddSingleton<IConfigOptions>(sp => sp.GetRequiredService<IOptions<ConfigOptions>>().Value);
+builder.Services.AddSingleton<IConfigOptions>(sp => sp.GetRequiredService<IOptions<ZD_Article_Grabber.Config.ConfigOptions>>().Value);
 builder.Services.AddSingleton<IResourceFetcher, ResourceFetcher>();
-builder.Services.Configure<ConfigOptions>(builder.Configuration);
-
+builder.Services.AddSingleton<Dependencies>();
 
 //Transients
-builder.Services.AddTransient<Fetch>();
+builder.Services.AddTransient<IContentFetcher, ContentFetcher>();
+builder.Services.AddTransient<IPathHelper, ZD_Article_Grabber.Helpers.PathHelper>();
+builder.Services.AddTransient<INodeBuilder, NodeBuilder>();
+builder.Services.AddTransient<IPageBuilder, PageBuilder>();
 
 ConfigurationManager configuration = builder.Configuration;
 IWebHostEnvironment environment = builder.Environment;
@@ -76,6 +79,7 @@ if ( app.Environment.IsDevelopment() )
 }
 
 app.UseHttpsRedirection();
+
 app.UseCors("AllowSpecificOrigins");
 app.UseRouting();
 app.UseAuthorization();
