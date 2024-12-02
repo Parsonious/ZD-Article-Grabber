@@ -17,8 +17,9 @@ namespace ZD_Article_Grabber.Services
             Console.WriteLine($"Cache Stats: {_dependencies.Cache.GetCurrentStatistics()}");
             if ( _dependencies.Cache.TryGetValue(id.CacheKey, out byte[] fileContent) )
             {
+                /*Issue #11 Created For This*/
                 resource.Content = fileContent;
-                resource.Url = id.ResourceUrl; //if this was already cached then the correct url was already set
+                resource.Url = id.ResourceUrl; //if this was already cached then the correct url was already set ***This is incorrect.
 
                 return resource;
             }
