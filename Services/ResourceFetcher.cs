@@ -12,42 +12,44 @@ namespace ZD_Article_Grabber.Services
         private readonly Dependencies _dependencies = dependencies;
         public async Task<ResourceResult> FetchResourceAsync(ResourceID id)
         {
-            byte[] content = []; //initialize content to empty byte array for ResourceResult
-            ResourceResult resource = new(id, content);
-            Console.WriteLine($"Cache Stats: {_dependencies.Cache.GetCurrentStatistics()}");
-            if ( _dependencies.Cache.TryGetValue(id.CacheKey, out byte[] fileContent) )
+            byte[] content; //initialize content to empty byte array for ResourceResult
+            string url;
+            if ( _dependencies.Cache.TryGetValue(id.CacheKey, out ResourceResult? cachedResource) && cachedResource is not null)
             {
-                /*Issue #11 Created For This*/
-                resource.Content = fileContent;
-                resource.Url = id.ResourceUrl; //if this was already cached then the correct url was already set ***This is incorrect.
-
-                return resource;
+                /*Issue #11 Created 
+                 * ResourceUrl was returning Null here. 
+                 * Test sTo See If Optimizations Resolved This.*/
+                return cachedResource;
             }
             if ( File.Exists(id.LocalUrl) )
             {
-                resource.Content = await File.ReadAllBytesAsync(id.LocalUrl);
-                resource.Url = id.LocalUrl; 
+                content = await File.ReadAllBytesAsync(id.LocalUrl);
+                url = id.LocalUrl; 
             }
             else // Fetch from remote URL
             {
-                resource.Content = await FetchRemoteResourceAsync(id.RemoteUrl);
-                resource.Url = id.RemoteUrl;
+                content = await FetchRemoteResourceAsync(id.RemoteUrl);
+                url = id.RemoteUrl;
             }
 
-            //Fallback to default resource if no content is found
-            if ( resource.Content == null || resource.Content.Length == 0 )
+            //Fallback
+            if ( content.Length == 0 )
             {
-                resource.Content = await GetDefaultResourceAsync(id); //pass enitre ResourceID in order to set ResourceUrl to default file path
+                content = await GetDefaultResourceAsync(id); 
+                url = id.ResourceUrl; //This is set in GetDefaultResourceAsync
             }
 
+            ResourceResult resourceResult = new(id, content)
+            {
+                Url = url
+            };
+            // Cache the content
+            _dependencies.Cache.Set(id.CacheKey, resourceResult, new MemoryCacheEntryOptions
+            {
+                SlidingExpiration = TimeSpan.FromMinutes(10)
+            });
 
-            // Cache the content the long way
-            var cacheEntry = _dependencies.Cache.CreateEntry(id.CacheKey);
-            cacheEntry.Value = resource.Content; // Set the value of the cache entry
-            cacheEntry.SetSlidingExpiration(TimeSpan.FromMinutes(10));
-            cacheEntry.Dispose(); // Ensure the entry is committed to the cache
-
-            return resource;
+            return resourceResult;
         }
         private async Task<byte[]> FetchRemoteResourceAsync(string url)
         {
@@ -66,7 +68,7 @@ namespace ZD_Article_Grabber.Services
                 Console.WriteLine($"Failed to fetch remote resource '{url}': {ex.Message}");
             }
 
-            return []; // Return an empty byte array if fetching fails
+            return Array.Empty<byte>(); // Leave as the fully declared call to return a singleton empty array instead of making a new one each time.
         }
 
         private async Task<byte[]> GetDefaultResourceAsync(ResourceID iD)
@@ -78,6 +80,7 @@ namespace ZD_Article_Grabber.Services
             {
                 throw new FileNotFoundException($"Default resource not found: {defaultFilePath}");
             }
+
             iD.ResourceUrl = defaultFilePath;
             return await File.ReadAllBytesAsync(defaultFilePath);
         }

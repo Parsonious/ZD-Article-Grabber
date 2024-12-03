@@ -13,9 +13,9 @@ namespace ZD_Article_Grabber.Resources.Nodes
 
         public async Task ProcessNodeAsync()
         {
-            UpdateHtmlNode();
+            await UpdateHtmlNode();
         }
-        public void UpdateHtmlNode()
+        public async Task UpdateHtmlNode()
         {
             var key = (Id.Type, Content);
             switch (key)
@@ -26,16 +26,17 @@ namespace ZD_Article_Grabber.Resources.Nodes
                     HtmlNode.InnerHtml = $"<pre><code class=\"language-sql\">{System.Net.WebUtility.HtmlEncode(content)}</code></pre>";
                     break;
                 case (ResourceType.Img, NodeContentBytes):
-                    HtmlNode.SetAttributeValue(HtmlNode.Name.ToLower() == "link" ? "href" : "src", Id.ResourceUrl);
+                    string attributeName = HtmlNode.Name.Equals("link", StringComparison.OrdinalIgnoreCase) ? "href" : "src";
+                    HtmlNode.SetAttributeValue(attributeName, Id.ResourceUrl);
                     break;
                 case (ResourceType.Css, NodeContentString { Content: var content }):
                     HtmlNode.SetAttributeValue("href", Id.ResourceUrl);
                     break;
-                case (_, NodeContentBytes b):
+                case (_, NodeContentBytes):
                     // Handle 'Other' types or byte[] content
                     HtmlNode.InnerHtml = $"<!-- Unsupported type: {Id.Type} with byte[] content -->";
                     break;
-                case (_, NodeContentString s):
+                case (_, NodeContentString):
                     // Handle 'Other' types or string content
                     HtmlNode.InnerHtml = $"<!-- Unsupported type: {Id.Type} with string content -->";
                     break;
@@ -43,6 +44,7 @@ namespace ZD_Article_Grabber.Resources.Nodes
                     HtmlNode.InnerHtml = $"<!-- Unsupported combination: {Id.Type}, {Content.GetType().Name} -->";
                     break;
             }
+            await Task.CompletedTask; //simulate async 
         }
 
     }
