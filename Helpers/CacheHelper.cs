@@ -11,7 +11,12 @@ namespace ZD_Article_Grabber.Helpers
 
             // Compute hash
             byte[] hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(sanitizedInput));
-            string hashString = BitConverter.ToString(hashBytes).Replace('-', '_').ToLowerInvariant();
+            StringBuilder hashBuilder = new StringBuilder(hashBytes.Length * 2);
+            foreach ( byte b in hashBytes )
+            {
+                hashBuilder.Append(b.ToString("x2"));
+            }
+            string hashString = hashBuilder.ToString();
             return $"{prefix}_{hashString}";
         }
 
