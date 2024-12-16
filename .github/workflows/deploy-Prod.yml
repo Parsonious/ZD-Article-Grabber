@@ -54,7 +54,7 @@ jobs:
           set -e  # Exit on any error
           IMAGE_TAG="${{ env.IMAGE_TAG }}"
           TIMESTAMP="${{ env.TIMESTAMP }}"
-          version="PROD.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}"
+          version="PROD.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.PATCH_VERSION }}"
           container_name="$version"
 
           # Stop the current container
