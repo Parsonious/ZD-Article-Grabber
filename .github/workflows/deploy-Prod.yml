@@ -107,4 +107,4 @@ jobs:
             docker rmi -f $old_images
           fi
          fi
-          EOF
+EOF
