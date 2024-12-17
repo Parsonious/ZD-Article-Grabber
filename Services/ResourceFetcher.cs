@@ -16,9 +16,6 @@ namespace ZD_Article_Grabber.Services
             string url;
             if ( _dependencies.Cache.TryGetValue(id.CacheKey, out ResourceResult? cachedResource) && cachedResource is not null)
             {
-                /*Issue #11 Created 
-                 * ResourceUrl was returning Null here. 
-                 * Test sTo See If Optimizations Resolved This.*/
                 return cachedResource;
             }
             if ( File.Exists(id.LocalUrl) )
