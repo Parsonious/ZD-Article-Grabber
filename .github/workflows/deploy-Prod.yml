@@ -77,14 +77,14 @@ jobs:
           echo "Containers before removal:"
           docker ps -a --filter "name=PROD"
 
-          old_containers=$(docker ps -a -q --filter "name=PROD" | tail -n +4)
+          old_containers=$(docker ps -a -q --filter "name=PROD" | tail -n +1)
           echo "Old containers that will be removed: $old_containers"
 
           if [ ! -z "$old_containers" ]; then
           docker rm -f $old_containers
           fi
           # Clean up old containers
-          old_containers=$(docker ps -a -q --filter "name=PROD" | tail -n +4)
+          old_containers=$(docker ps -a -q --filter "name=PROD" | tail -n +1)
           if [ ! -z "$old_containers" ]; then
             docker rm -f $old_containers
           fi
