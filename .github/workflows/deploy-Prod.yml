@@ -27,13 +27,15 @@ jobs:
       run: |
         major_version=$(grep 'public const string Major' ./VersionInfo.cs | grep -o '[0-9]\+')
         minor_version=$(grep 'public const string Minor' ./VersionInfo.cs | grep -o '[0-9]\+')
+        patch_version=$(grep 'public const string Patch' ./VersionInfo.cs | grep -o '[0-9]\+')
         echo "MAJOR_VERSION=$major_version" >> $GITHUB_ENV
         echo "MINOR_VERSION=$minor_version" >> $GITHUB_ENV
+        echo "PATCH_VERSION=$patch_version" >> $GITHUB_ENV
 
     - name: Define Image Tag
       id: define_tag
       run: |
-        IMAGE_TAG="PROD.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}"
+        IMAGE_TAG="PROD.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.PATCH_VERSION }}"
         echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
 
     - name: Build and push Docker image
@@ -52,7 +54,7 @@ jobs:
           set -e  # Exit on any error
           IMAGE_TAG="${{ env.IMAGE_TAG }}"
           TIMESTAMP="${{ env.TIMESTAMP }}"
-          version="PROD.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}"
+          version="PROD.${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ env.PATCH_VERSION }}"
           container_name="$version"
 
           # Stop the current container
