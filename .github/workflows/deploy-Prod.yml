@@ -81,14 +81,14 @@ jobs:
           container_count=$(docker ps -a --filter "name=PROD" -q | wc -l)
           
           if [ "$container_count" -gt 1 ]; then
-          old_containers=$(docker ps -a --filter "name=PROD" \
-          --format "{{.ID}} {{.CreatedAt}}" \
-          | sort -k2,2r \
-          | tail -n +4 \
-          | awk '{print $1}')
+            old_containers=$(docker ps -a --filter "name=PROD" \
+            --format "{{.ID}} {{.CreatedAt}}" \
+            | sort -k2,2r \
+            | tail -n +4 \
+            | awk '{print $1}')
 
             if [ ! -z "$old_containers" ]; then
-            docker rm -f $old_containers
+              docker rm -f $old_containers
             fi
           fi
 
@@ -102,9 +102,9 @@ jobs:
             | sort -k2,2r \
             | tail -n +4 \
             | awk '{print $1}')
-          
-          if [ ! -z "$old_images" ]; then
-            docker rmi -f $old_images
+
+            if [ ! -z "$old_images" ]; then
+              docker rmi -f $old_images
+            fi
           fi
-         fi
 EOF
