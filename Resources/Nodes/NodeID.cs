@@ -89,10 +89,9 @@ namespace ZD_Article_Grabber.Resources.Nodes
 
             if (!Uri.IsWellFormedUriString(fileUrl, UriKind.Absolute))
             {
-                // TODO: sanitize input here so it matches against what is expected.
-                /*Issue #12 created for this bug.*/
-                fileUrl = new Uri(new Uri(baseUrl), fileUrl).ToString(); //yeah this is taking the file url and forming it into a busted web url
-                //need to either sanitize the input again here or pass the pre url sanitized input to this method call (spaces and such are getting throug here)
+                fileUrl.Replace("\\\\", "/");
+                fileUrl = Uri.UnescapeDataString(fileUrl);
+                fileUrl = new Uri(new Uri(baseUrl), fileUrl).ToString();
             }
 
             return fileUrl;
