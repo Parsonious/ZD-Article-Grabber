@@ -1,10 +1,12 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using ZD_Article_Grabber.Interfaces;
+
 namespace ZD_Article_Grabber.Helpers 
 {
-    public class CacheHelper
+    public class CacheHelper : ICacheHelper
     {
-        public static string GenerateCacheKey(string prefix, string input)
+        public string GenerateCacheKey(string prefix, string input)
         {
             // Sanitize input
             string sanitizedInput = PathHelper.SanitizeInput(input);
