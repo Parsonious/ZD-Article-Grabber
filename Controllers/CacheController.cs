@@ -1,21 +1,23 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.TagHelpers.Cache;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Caching.Memory;
-using ZD_Article_Grabber.Helpers;
+using ZD_Article_Grabber.Interfaces;
 
 namespace ZD_Article_Grabber.Controllers
 {
     [Route("a/c/{fileType}/{fileName}")]
     [ApiController]
-    public class CacheController(IMemoryCache _cache) : ControllerBase
+    public class CacheController(IMemoryCache _cache, ICacheHelper _cacheHelper) : ControllerBase
     {
         private readonly IMemoryCache _cache = _cache;
+        private readonly ICacheHelper _cacheHelper = _cacheHelper;
 
         [HttpGet]
         public IActionResult GetCachedFile(string fileType, string fileName)
         {
-            string cacheKey = CacheHelper.GenerateCacheKey(fileType, fileName);
+            string cacheKey = _cacheHelper.GenerateCacheKey(fileType, fileName);
 
             if ( _cache.TryGetValue(cacheKey, out byte[] fileContent) && fileContent != null)
             {
