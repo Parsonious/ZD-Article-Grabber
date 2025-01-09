@@ -23,14 +23,22 @@ namespace ZD_Article_Grabber.Resources.Nodes
                 case (ResourceType.Sql or ResourceType.Ps1, NodeContentString { Content: var content }): //sql or ps1 node handled here
                     HtmlNode.RemoveAll();
                     HtmlNode.Name = "div";
-                    HtmlNode.InnerHtml = $"<pre><code class=\"language-sql\">{System.Net.WebUtility.HtmlEncode(content)}</code></pre>";
+                    HtmlNode.InnerHtml = $"<pre id=\"{Id.ID}\" <button id=\"{Id.ID}\" class=\"copy-code-button\">Copy</button>><code class=\"language-sql\">{System.Net.WebUtility.HtmlEncode(content)}</code></pre>";
                     break;
                 case (ResourceType.Img, NodeContentBytes):
-                    string attributeName = HtmlNode.Name.Equals("link", StringComparison.OrdinalIgnoreCase) ? "href" : "src";
-                    HtmlNode.SetAttributeValue(attributeName, Id.ResourceUrl);
+                    HtmlNode.SetAttributeValue("src", Id.ResourceUrl);
                     break;
-                case (ResourceType.Css, NodeContentString { Content: var content }):
+                case (ResourceType.Css, NodeContentString { Content: var content }): //content is here incase it is ever needed to be embedded in the page
+                    HtmlNode.Name = "link";
+                    HtmlNode.Attributes.RemoveAll();
+                    HtmlNode.SetAttributeValue("rel", "stylesheet");
                     HtmlNode.SetAttributeValue("href", Id.ResourceUrl);
+                    break;
+                case (ResourceType.Js, NodeContentString):
+                    HtmlNode.Name = "script";
+                    HtmlNode.Attributes.RemoveAll();
+                    HtmlNode.SetAttributeValue("src", Id.ResourceUrl);
+                    HtmlNode.InnerHtml = ""; //clear any inline scripting
                     break;
                 case (_, NodeContentBytes):
                     // Handle 'Other' types or byte[] content

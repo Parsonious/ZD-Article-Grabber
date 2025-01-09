@@ -21,15 +21,13 @@ namespace ZD_Article_Grabber.Builders
         {
             switch (node.Id.Type)
             {
-                case ResourceType.Js:
-                    // Handle JavaScript files
-                    break;
                 case ResourceType.Img:
                     await HandleByteType(node);
                     break;
                 case ResourceType.Css:
                 case ResourceType.Sql:
                 case ResourceType.Ps1:
+                case ResourceType:Js:
                     await ByteToTextType(node);
                     break;
                 default:

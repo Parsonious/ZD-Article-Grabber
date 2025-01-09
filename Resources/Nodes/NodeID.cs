@@ -23,6 +23,7 @@ namespace ZD_Article_Grabber.Resources.Nodes
         "poster",
         "cite",
         "background",
+        "script",
         "usemap"
     };
         public NodeID(HtmlNode htmlNode, IConfigOptions settings)
@@ -34,6 +35,7 @@ namespace ZD_Article_Grabber.Resources.Nodes
             RemoteUrl = GetFileUrl(settings.Paths.UrlPath);
             Name = Path.GetFileName(new Uri(RemoteUrl).LocalPath);
             Xpath = htmlNode.XPath;
+            ID = GetID();
             GenerateCacheKey();
         }
 
@@ -66,8 +68,11 @@ namespace ZD_Article_Grabber.Resources.Nodes
         }
         public string CompletePath(string extractedPath, ResourceType type)
         {
+            //set type string to lowercase
+            string typeString = type.ToString().ToLower();
+
             //remove any .. from the path
-            while (extractedPath.StartsWith(".."))
+            while ( extractedPath.StartsWith(".."))
             {
                 extractedPath = extractedPath[2..]; //WAN for .Substring(2);
             }
@@ -75,8 +80,14 @@ namespace ZD_Article_Grabber.Resources.Nodes
             //set OS specific path separators
             extractedPath = extractedPath.Replace('\\', '/').TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
 
+            //Check for preexisting type in path
+            if ( extractedPath.StartsWith(typeString,StringComparison.OrdinalIgnoreCase) ) //Set up a StringComparison to remove an allocation for the ToLower call
+            {
+                return Path.Combine(_settings.Paths.ResourceFilesPath, extractedPath);
+            }
+
             //finalize the path by combining the resource path with the extracted path
-            return Path.Combine(_settings.Paths.ResourceFilesPath, type.ToString().ToLower(), extractedPath);
+            return Path.Combine(_settings.Paths.ResourceFilesPath, typeString, extractedPath);
         }
         public string GetFileUrl(string baseUrl)
         {
