@@ -66,7 +66,6 @@ jobs:
           # Run the new container and capture output
           if ! output=$(docker run -d -p 8080:80 -p 8443:443 \
           --name $container_name \
-          # bind mount volumes
           -v /var/www/bepio/api/source:/api/source \
           -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
           -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
