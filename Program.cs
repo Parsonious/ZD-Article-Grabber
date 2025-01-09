@@ -39,36 +39,6 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnC
                       .AddJsonFile($"appsettings.{environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
 
-    builder.Services.AddCors(options =>
-    {
-        options.AddPolicy(name: "AllowSpecificOrigins",
-        policy =>
-        {
-            policy
-            .WithOrigins("https://bepio.net", "http://bepio.net",
-            "https://compiqsolutions.zendesk.com", 
-            "https://parsonious.github.io", "https://web.postman.co")
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-        });
-        options.AddPolicy(name: "AllowAll",
-            policy =>
-            {
-                policy
-                .AllowAnyHeader()
-                .AllowAnyOrigin()
-                .AllowAnyMethod();
-            });
-        options.AddDefaultPolicy(
-            policy =>
-            {
-                policy
-                .AllowAnyHeader()
-                .AllowAnyOrigin()
-                .AllowAnyMethod();
-            });
-    });
-
 builder.Services.AddControllers();
 var app = builder.Build();
 
@@ -82,7 +52,6 @@ if ( app.Environment.IsDevelopment() )
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowSpecificOrigins");
 app.UseRouting();
 app.UseAuthorization();
 app.MapControllers();
