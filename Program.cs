@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using ZD_Article_Grabber.Interfaces;
+using ZD_Article_Grabber.Helpers;
 using ZD_Article_Grabber.Services;
 using ZD_Article_Grabber.Builders;
 using ZD_Article_Grabber.Types;
@@ -22,11 +23,12 @@ builder.Services.AddHttpClient();
 //Singeltons
 builder.Services.AddSingleton<IConfigOptions>(sp => sp.GetRequiredService<IOptions<ZD_Article_Grabber.Config.ConfigOptions>>().Value);
 builder.Services.AddSingleton<IResourceFetcher, ResourceFetcher>();
+builder.Services.AddSingleton<ICacheHelper, CacheHelper>();
 builder.Services.AddSingleton<Dependencies>();
 
 //Transients
 builder.Services.AddTransient<IContentFetcher, ContentFetcher>();
-builder.Services.AddTransient<IPathHelper, ZD_Article_Grabber.Helpers.PathHelper>();
+builder.Services.AddTransient<IPathHelper, PathHelper>();
 builder.Services.AddTransient<INodeBuilder, NodeBuilder>();
 builder.Services.AddTransient<IPageBuilder, PageBuilder>();
 
