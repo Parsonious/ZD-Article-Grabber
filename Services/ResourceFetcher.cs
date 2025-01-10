@@ -25,8 +25,8 @@ namespace ZD_Article_Grabber.Services
             }
             else // Fetch from remote URL
             {
-                content = await FetchRemoteResourceAsync(id.RemoteUrl);
-                url = id.RemoteUrl;
+                content = await FetchRemoteResourceAsync(id.FallbackRemoteUrl);
+                url = id.FallbackRemoteUrl;
             }
 
             //Fallback
