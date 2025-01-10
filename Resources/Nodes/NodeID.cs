@@ -32,8 +32,8 @@ namespace ZD_Article_Grabber.Resources.Nodes
             _settings = settings;
             Type = GetResourceType();
             LocalUrl = CompletePath(GetResourcePath(htmlNode), Type);
-            RemoteUrl = GetFileUrl(settings.Paths.UrlPath);
-            Name = Path.GetFileName(new Uri(RemoteUrl).LocalPath);
+            FallbackRemoteUrl = GetFileUrl(settings.Paths.FallbackRemoteUrlPath);
+            Name = Path.GetFileName(new Uri(FallbackRemoteUrl).LocalPath);
             Xpath = htmlNode.XPath;
             ID = GetID();
             GenerateCacheKey();
