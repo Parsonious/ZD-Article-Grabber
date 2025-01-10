@@ -5,7 +5,8 @@ namespace ZD_Article_Grabber.Resources
     public abstract class ResourceID
     {
         public virtual string LocalUrl { get; protected set; }
-        public virtual string RemoteUrl { get; protected set; }
+        public virtual string FallbackRemoteUrl { get; protected set; }
+        public virtual string ExternalResourceUrl { get; protected set; }
         public virtual string ResourceUrl { get; internal set; }
         public virtual string Name { get; protected set; }
         public virtual ResourceType Type { get; protected set; }
