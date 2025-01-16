@@ -5,11 +5,11 @@ using ZD_Article_Grabber.Interfaces;
 
 namespace ZD_Article_Grabber.Resources.Nodes
 {
-    public class Node(HtmlNode htmlNode, IConfigOptions settings)
+    public class Node(HtmlNode htmlNode, IConfigOptions settings, IPathHelper pathHelper)
     {
         public HtmlNode HtmlNode { get; private set; } = htmlNode ?? throw new ArgumentNullException(nameof(htmlNode));
         public NodeContent Content { get; internal set; }
-        public NodeID Id { get; private set; } = new NodeID(htmlNode, settings);
+        public NodeID Id { get; private set; } = new NodeID(htmlNode, settings, pathHelper);
 
         public async Task ProcessNodeAsync()
         {
