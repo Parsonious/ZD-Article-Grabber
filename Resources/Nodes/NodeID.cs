@@ -1,5 +1,6 @@
 
 using System.Reflection;
+using System.Text;
 using HtmlAgilityPack;
 using ZD_Article_Grabber.Helpers;
 using ZD_Article_Grabber.Interfaces;
@@ -12,6 +13,7 @@ namespace ZD_Article_Grabber.Resources.Nodes
         public string Xpath { get; private set; }
         private readonly HtmlNode _htmlNode;
         private readonly IConfigOptions _settings;
+        private readonly IPathHelper _pathHelper;
         public static readonly HashSet<string> PathAttributes = new(StringComparer.OrdinalIgnoreCase)
 
     {
@@ -26,14 +28,16 @@ namespace ZD_Article_Grabber.Resources.Nodes
         "script",
         "usemap"
     };
-        public NodeID(HtmlNode htmlNode, IConfigOptions settings)
+        public NodeID(HtmlNode htmlNode, IConfigOptions settings, IPathHelper pathHelper)
         {
             _htmlNode = htmlNode;
             _settings = settings;
+            _pathHelper = pathHelper;
             Type = GetResourceType();
-            LocalUrl = CompletePath(GetResourcePath(htmlNode), Type);
-            RemoteUrl = GetFileUrl(settings.Paths.UrlPath);
-            Name = Path.GetFileName(new Uri(RemoteUrl).LocalPath);
+            LocalUrl = ConstructLocalUrl(htmlNode,Type);
+            FallbackRemoteUrl = ConstructFallBackUrl(settings.Paths.FallbackRemoteUrlPath);
+            Name = Path.GetFileName(new Uri(FallbackRemoteUrl).LocalPath);
+            ExternalResourceUrl = ConstructExternalResourceUrl(Name);
             Xpath = htmlNode.XPath;
             ID = GetID();
             GenerateCacheKey();
@@ -53,43 +57,24 @@ namespace ZD_Article_Grabber.Resources.Nodes
                 _ => throw new InvalidOperationException($"Unknown type for node: {_htmlNode.Name}")
             };
         }
-        public string GetResourcePath(HtmlNode node)
+
+        public string ConstructLocalUrl(HtmlNode node, ResourceType type)
         {
-            foreach (var attribute in PathAttributes)
+            //get relative path from node
+            string resourcePath = GetResourcePath(node);
+            //GetResourcePath can return a bobo value, check for this
+            if ( !string.Equals(resourcePath, _settings.Paths.ResourceFilesPath, StringComparison.OrdinalIgnoreCase) )
             {
-                var attrValue = node.GetAttributeValue(attribute, null);
-                if (!string.IsNullOrEmpty(attrValue))
-                {
-                    return attrValue;
-                }
+                //construct absolute path
+                return _pathHelper.CompleteLocalPath(_settings.Paths.ResourceFilesPath, resourcePath, type);
             }
-            //return a bobo path if no attribute matches 
-            return _settings.Paths.ResourceFilesPath;
+            ///TODO: Handle this possibility better.
+            return string.Empty; //return an empty string if bobo path existed can modify this to something else later
+
         }
-        public string CompletePath(string extractedPath, ResourceType type)
-        {
-            //set type string to lowercase
-            string typeString = type.ToString().ToLower();
 
-            //remove any .. from the path
-            while ( extractedPath.StartsWith(".."))
-            {
-                extractedPath = extractedPath[2..]; //WAN for .Substring(2);
-            }
-
-            //set OS specific path separators
-            extractedPath = extractedPath.Replace('\\', '/').TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
-
-            //Check for preexisting type in path
-            if ( extractedPath.StartsWith(typeString,StringComparison.OrdinalIgnoreCase) ) //Set up a StringComparison to remove an allocation for the ToLower call
-            {
-                return Path.Combine(_settings.Paths.ResourceFilesPath, extractedPath);
-            }
-
-            //finalize the path by combining the resource path with the extracted path
-            return Path.Combine(_settings.Paths.ResourceFilesPath, typeString, extractedPath);
-        }
-        public string GetFileUrl(string baseUrl)
+       
+        public string ConstructFallBackUrl(string baseUrl)
         {
             var fileUrl = _htmlNode.GetAttributeValue("href", null) ?? _htmlNode.GetAttributeValue("src", string.Empty);
 
@@ -107,5 +92,27 @@ namespace ZD_Article_Grabber.Resources.Nodes
 
             return fileUrl;
         }
+        public string ConstructExternalResourceUrl(string localUrl)
+        {
+                string typeString = Type.ToString().ToLower();
+                string sanitizedPath = _pathHelper.EncodeUrl(localUrl);
+                return $"{_settings.Paths.ExternalResourceUrlPath.TrimEnd('/')}/{typeString}/{sanitizedPath}";
+        }
+
+        //keeping this inside NodeID to remove what would create an added dependency on HtmlAgilityPack 
+        private string GetResourcePath(HtmlNode node)
+        {
+            foreach ( var attribute in PathAttributes )
+            {
+                var attrValue = node.GetAttributeValue(attribute, null);
+                if ( !string.IsNullOrEmpty(attrValue) )
+                {
+                    return attrValue;
+                }
+            }
+            //return a bobo path if no attribute matches 
+            return _settings.Paths.ResourceFilesPath;
+        }
+
     }
 }

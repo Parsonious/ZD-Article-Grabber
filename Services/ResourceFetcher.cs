@@ -21,12 +21,12 @@ namespace ZD_Article_Grabber.Services
             if ( File.Exists(id.LocalUrl) )
             {
                 content = await File.ReadAllBytesAsync(id.LocalUrl);
-                url = id.LocalUrl; 
+                url = id.LocalUrl;
             }
             else // Fetch from remote URL
             {
-                content = await FetchRemoteResourceAsync(id.RemoteUrl);
-                url = id.RemoteUrl;
+                content = await FetchRemoteResourceAsync(id.FallbackRemoteUrl);
+                url = id.FallbackRemoteUrl;
             }
 
             //Fallback
