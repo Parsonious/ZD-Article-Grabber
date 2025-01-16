@@ -32,12 +32,12 @@ namespace ZD_Article_Grabber.Resources.Nodes
                     HtmlNode.Name = "link";
                     HtmlNode.Attributes.RemoveAll();
                     HtmlNode.SetAttributeValue("rel", "stylesheet");
-                    HtmlNode.SetAttributeValue("href", Id.ResourceUrl);
+                    HtmlNode.SetAttributeValue("href", Id.ExternalResourceUrl);
                     break;
                 case (ResourceType.Js, NodeContentString):
                     HtmlNode.Name = "script";
                     HtmlNode.Attributes.RemoveAll();
-                    HtmlNode.SetAttributeValue("src", Id.ResourceUrl);
+                    HtmlNode.SetAttributeValue("src", Id.ExternalResourceUrl);
                     HtmlNode.InnerHtml = ""; //clear any inline scripting
                     break;
                 case (_, NodeContentBytes):
