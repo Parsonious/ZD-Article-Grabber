@@ -7,7 +7,6 @@ using ZD_Article_Grabber.Interfaces;
 
 namespace ZD_Article_Grabber.Resources.Nodes
 {
-    ///TODO: Add External Resource path to ResourceID.
 
     public class NodeID : ResourceID
     {
