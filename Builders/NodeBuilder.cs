@@ -7,13 +7,13 @@ using ZD_Article_Grabber.Types;
 
 namespace ZD_Article_Grabber.Builders
 {
-    public class NodeBuilder(Dependencies dependencies, IResourceFetcher resourceFetcher) : INodeBuilder
+    public class NodeBuilder(Dependencies dependencies, IResourceFetcher resourceFetcher, IPathHelper pathHelper) : INodeBuilder
     {
         readonly Dependencies _dependencies = dependencies;
         readonly IResourceFetcher _resourceFetcher = resourceFetcher;
         public async Task<Node> BuildNodeAsync(HtmlNode htmlNode)
         {
-            Node node = new(htmlNode, _dependencies.Settings);
+            Node node = new(htmlNode, _dependencies.Settings, pathHelper);
             await FetchContentAsync(node);
             return node;
         }

@@ -17,6 +17,7 @@ namespace ZD_Article_Grabber.Resources.Pages
             Name = Path.ChangeExtension(Name, PathHelper.GetExtension(Type)); //add back necessary extension based on ResourceType
 
             LocalUrl = Path.Combine(Config.Paths.HtmlFilesPath, Name);
+            ExternalResourceUrl = $"{Config.Paths.ExternalResourceUrlPath}{Uri.EscapeDataString(Name)}"; //make normalized name url safe
             FallbackRemoteUrl = $"{Config.Paths.FallbackRemoteUrlPath}{Uri.EscapeDataString(Name)}"; //make normalized name url safe
             GenerateCacheKey();
         }

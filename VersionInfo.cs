@@ -4,6 +4,6 @@
     {
         public const string Major = "2";
         public const string Minor = "4";
-        public const string Patch = "2";
+        public const string Patch = "3";
     }
 }

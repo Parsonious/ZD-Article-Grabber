@@ -21,7 +21,7 @@ namespace ZD_Article_Grabber.Services
             if ( File.Exists(id.LocalUrl) )
             {
                 content = await File.ReadAllBytesAsync(id.LocalUrl);
-                url = id.LocalUrl; 
+                url = id.LocalUrl;
             }
             else // Fetch from remote URL
             {
