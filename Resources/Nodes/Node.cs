@@ -23,7 +23,11 @@ namespace ZD_Article_Grabber.Resources.Nodes
                 case (ResourceType.Sql or ResourceType.Ps1, NodeContentString { Content: var content }): //sql or ps1 node handled here
                     HtmlNode.RemoveAll();
                     HtmlNode.Name = "div";
-                    HtmlNode.InnerHtml = $"<pre id=\"{Id.ID}\" ><button id=\"{Id.ID}\" class=\"copy-code-button\">Copy</button><code class=\"language-sql\">{System.Net.WebUtility.HtmlEncode(content)}</code></pre>";
+                    HtmlNode.InnerHtml = $@"
+                            <pre id=""{Id.ID}-pre"">
+                                <button id=""{Id.ID}-btn"" class=""copy-code-button"" data-target=""{Id.ID}-code"">Copy</button>
+                                <code id=""{Id.ID}-code"" class=""language-sql"">{System.Net.WebUtility.HtmlEncode(content)}</code>
+                            </pre>";
                     break;
                 case (ResourceType.Img, NodeContentBytes):
                     HtmlNode.SetAttributeValue("src", Id.ResourceUrl);
@@ -38,6 +42,7 @@ namespace ZD_Article_Grabber.Resources.Nodes
                     HtmlNode.Name = "script";
                     HtmlNode.Attributes.RemoveAll();
                     HtmlNode.SetAttributeValue("src", Id.ExternalResourceUrl);
+                    HtmlNode.SetAttributeValue("type", "text/javascript");
                     HtmlNode.InnerHtml = ""; //clear any inline scripting
                     break;
                 case (_, NodeContentBytes):
