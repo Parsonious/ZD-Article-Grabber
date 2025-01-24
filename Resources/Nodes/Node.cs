@@ -42,6 +42,7 @@ namespace ZD_Article_Grabber.Resources.Nodes
                     HtmlNode.Name = "script";
                     HtmlNode.Attributes.RemoveAll();
                     HtmlNode.SetAttributeValue("src", Id.ExternalResourceUrl);
+                    HtmlNode.SetAttributeValue("type", "text/javascript");
                     HtmlNode.InnerHtml = ""; //clear any inline scripting
                     break;
                 case (_, NodeContentBytes):
