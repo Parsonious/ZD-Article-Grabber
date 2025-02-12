@@ -7,6 +7,8 @@ namespace ZD_Article_Grabber.Config
     {
         public required PathsConfig Paths { get; set; }
         public required FilesConfig Files { get; set; }
+        public required JwtConfig Jwt { get; set; }
         public required Dictionary<string, string> XPathQueries { get; set; }
+        
     }
 }
