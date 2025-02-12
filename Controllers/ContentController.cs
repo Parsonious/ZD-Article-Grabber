@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -13,15 +14,21 @@ namespace ZD_Article_Grabber.Controllers
         private readonly IContentFetcher _fetchService = fetchService;
 
 
-        [HttpGet("{title}")]
-        public async Task<IActionResult> GetContent(string title)
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetContent()
         {
-            var htmlContent = await _fetchService.FetchHtmlAsync(title);
+            var titleClaim = User.FindFirst("title")?.Value;
+            if(string.IsNullOrEmpty(titleClaim) )
+            {
+                return BadRequest("Invalid token: Missing title claim");
+            }
+            var htmlContent = await _fetchService.FetchHtmlAsync(titleClaim);
             if ( htmlContent == null )
             {
                 return NotFound("Page Not Found");
             }
-            return Content(htmlContent, "text/html");
+            return Ok(Content(htmlContent, "text/html"));
         }
     }
 }
