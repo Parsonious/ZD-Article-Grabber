@@ -1,4 +1,5 @@
 ﻿using ZD_Article_Grabber.Helpers;
+using ZD_Article_Grabber.Types;
 
 namespace ZD_Article_Grabber.Resources
 {
