@@ -2,32 +2,36 @@ using ZD_Article_Grabber.Interfaces;
 using HtmlAgilityPack;
 using System.Text;
 using ZD_Article_Grabber.Resources.Nodes;
-using ZD_Article_Grabber.Resources;
 using ZD_Article_Grabber.Types;
-
+using System.Threading;
 namespace ZD_Article_Grabber.Builders
 {
-    public class NodeBuilder(Dependencies dependencies, IResourceFetcher resourceFetcher, IPathHelper pathHelper) : INodeBuilder
+    public class NodeBuilder(Dependencies dependencies, 
+        IResourceFetcher resourceFetcher,
+        IPathHelper pathHelper,
+        IResourceInstructions resourceInstructions) : INodeBuilder
     {
         readonly Dependencies _dependencies = dependencies;
         readonly IResourceFetcher _resourceFetcher = resourceFetcher;
+        private readonly IResourceInstructions _resourceInstructions = resourceInstructions;
         public async Task<Node> BuildNodeAsync(HtmlNode htmlNode)
         {
-            Node node = new(htmlNode, _dependencies.Settings, pathHelper);
+            Node node = new(htmlNode, _dependencies.Settings, pathHelper, _resourceInstructions);
             await FetchContentAsync(node);
             return node;
         }
+        //This is where the node is actually built based on resource type
         private async Task FetchContentAsync(Node node)
         {
             switch (node.Id.Type)
             {
-                case ResourceType.Img:
+                case ResourceType.IMG:
                     await HandleByteType(node);
                     break;
-                case ResourceType.Css:
-                case ResourceType.Sql:
-                case ResourceType.Ps1:
-                case ResourceType:Js:
+                case ResourceType.CSS:
+                case ResourceType.SQL:
+                case ResourceType.PS1:
+                case ResourceType:JS:
                     await ByteToTextType(node);
                     break;
                 default:

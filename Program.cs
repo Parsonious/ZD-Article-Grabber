@@ -8,41 +8,64 @@ using ZD_Article_Grabber.Services;
 using ZD_Article_Grabber.Builders;
 using ZD_Article_Grabber.Types;
 using System.Text;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
 //Defaults - left for debug
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-#if DEBUG
+
 builder.Services.AddSwaggerGen(c =>
 {
+    // For API Key (used by /a/gt/get-token)
     c.AddSecurityDefinition("ApiKey", new OpenApiSecurityScheme
     {
         Description = "API Key Authentication",
-        Name = "bak",
+        Name = "bak", // Header name for API key
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "ApiKeyScheme"
+        Type = SecuritySchemeType.ApiKey
     });
 
-    //add global security requirements
+    // For JWT (used by /a/p)
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT"
+    });
+
+    // Apply security requirements globally
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-    {
-        new OpenApiSecurityScheme
         {
-            Reference = new OpenApiReference
+            new OpenApiSecurityScheme
             {
-                Type = ReferenceType.SecurityScheme,
-                Id = "ApiKey"
-            }
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "ApiKey" // For API key-protected endpoints
+                }
+            },
+            Array.Empty<string>()
         },
-        Array.Empty<string>()
-    }
-   });
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer" // For JWT-protected endpoints
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
-#endif
+
 //Custom
 builder.Services.AddMemoryCache();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -83,6 +106,14 @@ builder.Services.AddTransient<IPathHelper, PathHelper>();
 builder.Services.AddTransient<INodeBuilder, NodeBuilder>();
 builder.Services.AddTransient<IPageBuilder, PageBuilder>();
 builder.Services.AddTransient<IArticle, Article>();
+
+//Scoped
+builder.Services.AddScoped<IResourceInstructions>(provider =>
+{
+    HttpContext? httpContext = provider.GetRequiredService<IHttpContextAccessor>().HttpContext;
+    IEnumerable<Claim> claims = httpContext?.User.Claims ?? [];
+    return new ResourceInstructions(claims);
+});
 
 ConfigurationManager configuration = builder.Configuration;
 IWebHostEnvironment environment = builder.Environment;

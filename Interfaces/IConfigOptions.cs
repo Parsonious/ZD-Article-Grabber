@@ -8,6 +8,7 @@ namespace ZD_Article_Grabber.Interfaces
         PathsConfig Paths { get; }
         FilesConfig Files { get; }
         JwtConfig Jwt { get; }
+        DomainClaimsConfig DomainClaims { get; }
         Dictionary<string, string> XPathQueries { get; }
     }
 }

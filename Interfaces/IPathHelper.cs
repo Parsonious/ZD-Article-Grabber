@@ -1,4 +1,4 @@
-using ZD_Article_Grabber.Resources;
+using ZD_Article_Grabber.Types;
 
 namespace ZD_Article_Grabber.Interfaces
 {
