@@ -50,9 +50,9 @@ namespace ZD_Article_Grabber.Controllers
             //Generate Boilerplate JWT Claims
             var claims = new List<Claim>
             {
-              new Claim("articleID", title), //temporary until a sql lite db can be set up to store article data
-              new Claim("title", title),
-              new Claim(JwtRegisteredClaimNames.Exp,
+              new ("articleID", title), //temporary until a sql lite db can be set up to store article data
+              new ("title", title),
+              new (JwtRegisteredClaimNames.Exp,
                   new DateTimeOffset(DateTime.UtcNow.AddMinutes(_config.Jwt.ExpirationInMinutes)).ToUnixTimeSeconds().ToString())
             };
             //Conditionally add domain specific claims

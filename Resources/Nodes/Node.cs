@@ -46,14 +46,21 @@ namespace ZD_Article_Grabber.Resources.Nodes
             await Task.Yield();
             try
             {
-                //all current ByteToText types supported
-                if ( type is ResourceType.SQL or ResourceType.PS1 or ResourceType.JS or ResourceType.CSS ) 
+                switch ( type )
                 {
-                    await Task.Run(() => BuildCodeBlock(nodeContent, type));
-                }
-                else
-                {
-                    await Task.Run(() => HandleUnsupported(type));
+                    case ResourceType.CSS:
+                        await BuildStyleBlock(nodeContent);
+                        break;
+                    case ResourceType.SQL:
+                    case ResourceType.PS1:
+                        await BuildCodeBlock(nodeContent, type);
+                        break;
+                    case ResourceType.JS:
+                        await BuildScriptBlock(nodeContent);
+                        break;
+                    default:
+                        HtmlNode.InnerHtml = $"<!-- Unsupported type: {Id.Type} -->";
+                        break;
                 }
             }
             catch ( Exception ex )
@@ -105,18 +112,8 @@ namespace ZD_Article_Grabber.Resources.Nodes
                 semaphore.Release();
             }
         }
-        private async Task HandleUnsupported(ResourceType type, Instructions instructions)
-        {
-            await Task.Yield();
-            HtmlNode.InnerHtml = $"<!-- Unsupported type: {type} and Instructions: {instructions} combination -->";
-
-        }
-        private async Task HandleUnsupported(ResourceType type)
-        {
-            await Task.Yield();
-            HtmlNode.InnerHtml = $"<!-- Unsupported type: {type} -->";
-        }
-        private async void BuildCodeBlock(string content, ResourceType resource) 
+        
+        private async Task BuildCodeBlock(string content, ResourceType resource) 
         {
             string lockKey = $"{Id.ID}-{Id.Name}";
             SemaphoreSlim semaphore = _locks.GetOrAdd(lockKey, _ => new SemaphoreSlim(1, 1));
@@ -127,14 +124,15 @@ namespace ZD_Article_Grabber.Resources.Nodes
             {
                 ResourceType.SQL => "sql",
                 ResourceType.PS1 => "powershell",
-                ResourceType.CSS => "css",
-                ResourceType.JS => "javascript",
-                _ => throw new InvalidOperationException($"Unsupported type: {resource}")
+                _ => throw new InvalidOperationException($"Unsupported request type: {resource}")
             };
 
             try
             {
                 var doc = HtmlNode.OwnerDocument;
+
+                //clear the node
+                HtmlNode.Attributes.RemoveAll();
 
                 //create wrapper div
                 HtmlNode container = doc.CreateElement("div");
@@ -171,6 +169,60 @@ namespace ZD_Article_Grabber.Resources.Nodes
             {
                 semaphore.Release();
             }
+        }
+        private async Task BuildScriptBlock(string content)
+        {
+            await Task.Yield();
+            try
+            {
+                HtmlNode.Attributes.RemoveAll();
+
+                HtmlNode.Name = "script";
+                HtmlNode.SetAttributeValue("type", "text/javascript");
+                HtmlNode.InnerHtml = content;
+            }
+            catch
+            {
+                HtmlNode.InnerHtml = $"<!-- Error: Failed to build script block for {Id.ID} -->";
+            }
+        }
+        private async Task BuildStyleBlock(string content)
+        {
+            await Task.Yield();
+            try
+            {
+                HtmlNode.Name = "style";
+                HtmlNode.SetAttributeValue("type", "text/css");
+                HtmlNode.InnerHtml = content;
+               
+            }
+            catch
+            {
+                HtmlNode.InnerHtml = $"<!-- Error: Failed to build style block for {Id.ID} -->";
+            }
+        }
+        private async Task InjectToHead(HtmlDocument doc, HtmlNode node)
+        {
+            ///TDOD: Make this work to control where my nodes are in the doc
+            await Task.Yield();
+            HtmlNode? headNode = doc.DocumentNode.SelectSingleNode("//head") //select head node if exists
+                    ?? doc.DocumentNode.PrependChild(doc.CreateElement("head")); //if NOT exists (null) create one
+            //append to the head node
+            headNode.AppendChild(node);
+        }
+        private async Task InjectToBody(HtmlDocument doc, HtmlNode node)
+        {
+            ///TODO: Make this work too
+            await Task.Yield();
+            HtmlNode? bodyNode = doc.DocumentNode.SelectSingleNode("//body") //select body node if exists
+                    ?? doc.DocumentNode.AppendChild(doc.CreateElement("body")); //if NOT exisits (is null) create new
+            bodyNode.AppendChild(node);
+        }
+        private async Task HandleUnsupported(ResourceType type, Instructions instructions)
+        {
+            await Task.Yield();
+            HtmlNode.InnerHtml = $"<!-- Unsupported type: {type} and Instructions: {instructions} combination -->";
+
         }
     }
 }
