@@ -7,8 +7,7 @@ namespace ZD_Article_Grabber.Controllers
 {
     [Route("a/p")]
     [ApiController]
-    public class ContentController(IContentFetcher fetchService, 
-        IResourceInstructions resourceInstructions) : ControllerBase
+    public class ContentController(IContentFetcher fetchService) : ControllerBase
     {
         private readonly IContentFetcher _fetchService = fetchService;
 
