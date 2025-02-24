@@ -2,16 +2,48 @@ using Microsoft.OpenApi.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using System.Text;
+using System.Text.Json;
+using System.Security.Claims;
 using ZD_Article_Grabber.Interfaces;
 using ZD_Article_Grabber.Helpers;
 using ZD_Article_Grabber.Services;
 using ZD_Article_Grabber.Builders;
 using ZD_Article_Grabber.Types;
-using System.Text;
-using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
+ConfigurationManager configuration = builder.Configuration;
+
+IWebHostEnvironment environment = builder.Environment;
+
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                      .AddJsonFile($"appsettings.{environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
+
+
+if ( environment.IsDevelopment() )
+{
+    builder.Configuration.AddUserSecrets<Program>();
+}
+else
+{
+    builder.Configuration.AddEnvironmentVariables();
+}
+//validate JWT configuration
+var jwtConfigSection = configuration.GetSection("Jwt");
+var jwtConfig = jwtConfigSection.Get<ZD_Article_Grabber.Config.JwtConfig>();
+
+if ( jwtConfig == null ||
+    string.IsNullOrEmpty(jwtConfig.TokenKey) ||
+    string.IsNullOrEmpty(jwtConfig.ApiKey) ||
+    string.IsNullOrEmpty(jwtConfig.Issuer) )
+{
+    throw new InvalidOperationException("JWT configuration is missing or incomplete.");
+}
+
+#if DEBUG
 //Defaults - left for debug
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -65,8 +97,11 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+#endif
 
 //Custom
+builder.Services.AddHealthChecks()
+    .AddCheck<KeyManagementHealthCheck>("KeyManagement");
 builder.Services.AddMemoryCache();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -94,11 +129,16 @@ builder.Services.Configure<ZD_Article_Grabber.Config.ConfigOptions>(builder.Conf
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient();
 
+//Hosted
+builder.Services.AddHostedService<KeyRotationService>();
+
+
 //Singeltons
 builder.Services.AddSingleton<IConfigOptions>(sp => sp.GetRequiredService<IOptions<ZD_Article_Grabber.Config.ConfigOptions>>().Value);
 builder.Services.AddSingleton<IResourceFetcher, ResourceFetcher>();
 builder.Services.AddSingleton<ICacheHelper, CacheHelper>();
 builder.Services.AddSingleton<Dependencies>();
+builder.Services.AddSingleton<IKeyHistoryService, KeyHistoryService>();
 
 //Transients
 builder.Services.AddTransient<IContentFetcher, ContentFetcher>();
@@ -111,32 +151,50 @@ builder.Services.AddTransient<IArticle, Article>();
 builder.Services.AddScoped<IResourceInstructions>(provider =>
 {
     HttpContext? httpContext = provider.GetRequiredService<IHttpContextAccessor>().HttpContext;
-    IEnumerable<Claim> claims = httpContext?.User.Claims ?? [];
+    IEnumerable<Claim> claims = httpContext?.User.Claims ?? Array.Empty<Claim>();
     return new ResourceInstructions(claims);
 });
-
-ConfigurationManager configuration = builder.Configuration;
-IWebHostEnvironment environment = builder.Environment;
-
-builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                      .AddJsonFile($"appsettings.{environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
 
 builder.Services.AddControllers();
 var app = builder.Build();
 
-
+#if DEBUG
 // Configure the HTTP request pipeline.
-if ( app.Environment.IsDevelopment() )
-{
     app.UseSwagger();
     app.UseSwaggerUI();
-}
+#endif
 
 app.UseHttpsRedirection();
 
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        
+        var response = new
+        {
+            Status = report.Status.ToString(),
+            KeyManagement = report.Entries.ToDictionary(
+                entry => entry.Key,
+                entry => new
+                {
+                    Status = entry.Value.Status.ToString(),
+                    Description = entry.Value.Description,
+                    Duration = entry.Value.Duration
+                })
+        };
+        
+        await JsonSerializer.SerializeAsync(
+            context.Response.Body,
+            response,
+            new JsonSerializerOptions { WriteIndented = true }
+        );
+    }
+});
 app.MapControllers();
 app.Run();
