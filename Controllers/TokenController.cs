@@ -13,28 +13,48 @@ namespace ZD_Article_Grabber.Controllers
 {
     [Route("a/gt")]
     [ApiController]
-    public class TokenController(IArticle article, IConfigOptions config, IKeyHistoryService keyHistory) : ControllerBase
+    public class TokenController : ControllerBase
     {
+        //private readonly IArticle _article;
+        public required IConfigOptions _config;
+        public required IKeyHistoryService _keyHistory;
+        public required ECDsaSecurityKey _ecdsaKey;
+
         private const string DEBUG_TOKEN_ENDPOINT = "get-token";
         private const string DEBUG_PUBLIC_KEY_ENDPOINT = "get-public-key";
         private const string RELEASE_PUBLIC_KEY_ENDPOINT = "8a8d2dbaeef843c20813c53687e8b20a"; //public key endpoint
         private const string RELEASE_TOKEN_ENDPOINT = "6765742d746f6b656e"; //hex encoded get-token
-        private readonly IKeyHistoryService _keyHistory = keyHistory;
-        private readonly ECDsaSecurityKey _ecdsaKey = LoadKey();
-        private protected static ECDsaSecurityKey LoadKey()
+        private const string CURRENT_PRIVATE_KEY = "current.priv.pem";
+        private const string CURRENT_PUBLIC_KEY = "current.pub.pem";
+
+        public TokenController(IConfigOptions config, IKeyHistoryService keyHistory)
         {
-            string? priv = System.IO.File.ReadAllText("ec-priv-key.pem");
+            _config = config;
+            _keyHistory = keyHistory;
+            _ecdsaKey = LoadKey();
+        }
+        private protected ECDsaSecurityKey LoadKey()
+        {
+            // Get the full path for the private key
+            string privKeyPath = Path.Combine(_config.KeyManagement.KeyFolder, CURRENT_PRIVATE_KEY);
+
+            // Read and create the key
+            string? priv = System.IO.File.ReadAllText(privKeyPath);
             ECDsa? ecdsa = ECDsa.Create();
             ecdsa.ImportFromPem(priv);
-            DateTime keyMetadata = System.IO.File.GetCreationTime("ec-priv-key.pem");
-            string keyId = $"ec-key-{keyMetadata:yyyyMMddHHmm}";
 
-            return new ECDsaSecurityKey(ecdsa) {
+            // Generate a unique key ID based on file metadata and hash
+            DateTime keyMetadata = System.IO.File.GetCreationTime(privKeyPath);
+            byte[] keyBytes = System.IO.File.ReadAllBytes(privKeyPath);
+            string keyHash = Convert.ToHexString(SHA256.HashData(keyBytes)).Substring(0, 8);
+            string keyId = $"ec-{keyHash}-{keyMetadata:yyyyMMdd}";
+
+            return new ECDsaSecurityKey(ecdsa)
+            {
                 KeyId = keyId
             };
         }
-        private readonly IArticle _article = article;
-        private readonly IConfigOptions _config = config;
+
         #if DEBUG
         [HttpGet(DEBUG_TOKEN_ENDPOINT)]
         #else
@@ -44,7 +64,7 @@ namespace ZD_Article_Grabber.Controllers
         public IActionResult GenerateToken(string title)
         {
             //validate api key before anything else is done
-            if(!Request.Headers.TryGetValue("bak", out var apiKey) || apiKey != _config.Jwt.ApiKey )
+            if(!Request.Headers.TryGetValue("bak", out var apiKey) )
             {
                 return Unauthorized("Call a locksmith");
             }
@@ -54,16 +74,29 @@ namespace ZD_Article_Grabber.Controllers
                 return BadRequest("Referer is required");
             }
             //safely parse out Referer Uri
-            if ( !Uri.TryCreate(refererHeader, UriKind.Absolute, out var refererUri) )
+            // Ensure referer has a scheme
+            string refererString = refererHeader.ToString();
+            if ( !refererString.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !refererString.StartsWith("https://", StringComparison.OrdinalIgnoreCase) )
             {
-                return BadRequest("Invalid Referer");
+                refererString = $"https://{refererString}";
+            }
+            if ( !Uri.TryCreate(refererString, UriKind.Absolute, out var refererUri) )
+            {
+                return BadRequest($"Invalid Referer: {refererString}");
             }
             //verify title
             if ( string.IsNullOrEmpty(title) )
             {
                 return BadRequest("Title is required");
             }
-            var sourceDomain = refererUri.Host;
+            var sourceDomain = refererUri.Host.ToLowerInvariant();
+
+            //validate title
+            if ( !_config.Referer.AllowedDomains.Contains(sourceDomain) )
+            {
+                return Unauthorized("Invalid referer domain");
+            }
 
             //if ( !_article.Exists(title) )
             //{
@@ -109,8 +142,15 @@ namespace ZD_Article_Grabber.Controllers
         #endif
         public IActionResult GetPublicKey()
         {
-            var publicKey = Convert.ToBase64String(Encoding.UTF8.GetBytes(System.IO.File.ReadAllText("ec-pub-key.pem")));
-        return Ok(new { publicKey });
+            string pubKeyPath = Path.Combine(_config.KeyManagement.KeyFolder, CURRENT_PUBLIC_KEY);
+
+            if( !System.IO.File.Exists(pubKeyPath) )
+            {
+                return NotFound("Public key not found");
+            }
+
+            string publicKey = Convert.ToBase64String(Encoding.UTF8.GetBytes(System.IO.File.ReadAllText(pubKeyPath)));
+            return Ok(new { publicKey });
         }
     }
 }

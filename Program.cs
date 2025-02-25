@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using System.Text;
 using System.Text.Json;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using ZD_Article_Grabber.Interfaces;
 using ZD_Article_Grabber.Helpers;
 using ZD_Article_Grabber.Services;
@@ -106,18 +107,22 @@ builder.Services.AddMemoryCache();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-                var jwtKey = builder.Configuration["Jwt:TokenKey"] ?? throw new InvalidOperationException("JWT Key is not configured.");
+        string publicKeyPath = Path.Combine(configuration["KeyManagement:KeyFolder"] ?? "Keys", "current.pub.pem");
+        string pubKey = File.ReadAllText(publicKeyPath);
 
-                options.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-                    ValidateIssuer = true,
-                    ValidIssuer = builder.Configuration["Jwt:Issuer"],
-                    ValidateAudience = false,
-                    ValidateLifetime = false,
-                    ClockSkew = TimeSpan.Zero, //strict expiration validation
-                };
+        ECDsa eCDsa = ECDsa.Create();
+        eCDsa.ImportFromPem(pubKey);
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new ECDsaSecurityKey(eCDsa),
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero, //strict expiration validation
+        };
     });
 builder.Services.AddAuthorization();
 

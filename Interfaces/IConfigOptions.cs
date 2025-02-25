@@ -11,5 +11,6 @@ namespace ZD_Article_Grabber.Interfaces
         DomainClaimsConfig DomainClaims { get; }
         Dictionary<string, string> XPathQueries { get; }
         KeyManagementConfig KeyManagement { get; }
+        RefererConfig Referer { get; }
     }
 }
