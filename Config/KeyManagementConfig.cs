@@ -2,7 +2,8 @@ namespace ZD_Article_Grabber.Config
 {
     public class KeyManagementConfig
     {
-        public string KeyFolder { get; set; } = "Keys";
+        public string KeyActiveFolder { get; set; } = "Keys";
+        public string KeyArchiveFolder { get; set; } = "Keys/Archive";
         public int RotationIntervalDays { get; set; } = 30;
         public int KeyLifetimeDays { get; set; } = 90;
         public int RetentionPeriodDays { get; set; } = 180;

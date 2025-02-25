@@ -16,14 +16,14 @@ namespace ZD_Article_Grabber.Services
     public class KeyHistoryService : IKeyHistoryService, IDisposable
     {
         private readonly ILogger<KeyHistoryService> _logger;
-        private readonly IConfigOptions _options;
+        private readonly IConfigOptions _config;
         private readonly ConcurrentDictionary<string, KeyMetadata> _keyHistory = new();
         private readonly Timer _cleanupTimer;
         private readonly SemaphoreSlim _fileAccessSemaphore = new(1, 1);
         public KeyHistoryService(ILogger<KeyHistoryService> logger, IConfigOptions options)
         {
             _logger = logger;
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _config = options ?? throw new ArgumentNullException(nameof(options));
             LoadKeyHistoryAsync().GetAwaiter().GetResult(); // Initialize synchronously
             _cleanupTimer = new Timer(CleanupExpiredKeys, null,
                 TimeSpan.FromMinutes(5), // Initial delay
@@ -48,7 +48,7 @@ namespace ZD_Article_Grabber.Services
         {
             if (_keyHistory.TryGetValue(keyId, out var metadata))
             {
-                var newCount = metadata.IncrementUsageCount();
+                metadata.IncrementUsageCount();
                 _logger.LogInformation("Key {KeyId} used. Total usage: {Count}", keyId, metadata.UsageCount);
             }
         }
@@ -62,7 +62,7 @@ namespace ZD_Article_Grabber.Services
                 }
 
                 var keyFiles = await Task.Run(() =>
-                    Directory.GetFiles(_options.KeyManagement.KeyFolder, "*.priv.pem"));
+                    Directory.GetFiles(_config.KeyManagement.KeyActiveFolder, "*.priv.pem"));
 
                 foreach (var keyFile in keyFiles)
                 {
@@ -71,7 +71,7 @@ namespace ZD_Article_Grabber.Services
                         var fileInfo = new FileInfo(keyFile);
                         string keyId = Path.GetFileNameWithoutExtension(keyFile).Split('.')[0];
                         DateTime createdAt = fileInfo.CreationTimeUtc;
-                        DateTime expiresAt = createdAt.AddDays(_options.KeyManagement.KeyLifetimeDays);
+                        DateTime expiresAt = createdAt.AddDays(_config.KeyManagement.KeyLifetimeDays);
 
                         _keyHistory.AddOrUpdate(keyId,
                             new KeyMetadata(keyId, createdAt, expiresAt),
@@ -88,16 +88,16 @@ namespace ZD_Article_Grabber.Services
                 _fileAccessSemaphore.Release();
             }
         }
-        private void CleanupExpiredKeys(object state)
+        private void CleanupExpiredKeys(object? state)
         {
             var expiredKeys = _keyHistory
                 .Where(kvp => kvp.Value.ExpiresAt < DateTime.UtcNow)
                 .Select(kvp => kvp.Key)
                 .ToList();
 
-            foreach (var keyId in expiredKeys)
+            foreach ( var keyId in expiredKeys )
             {
-                if (_keyHistory.TryRemove(keyId, out var metadata))
+                if ( _keyHistory.TryRemove(keyId, out var metadata) )
                 {
                     _logger.LogInformation("Removed expired key {KeyId} from history. " +
                         "Total usage count: {Count}", keyId, metadata.UsageCount);

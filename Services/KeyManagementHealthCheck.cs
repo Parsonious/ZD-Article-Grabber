@@ -13,7 +13,7 @@ namespace ZD_Article_Grabber.Services
         {
             _keyHistoryService = keyHistory;
             _config = config;
-            _keyFolder = _config.KeyManagement.KeyFolder;
+            _keyFolder = _config.KeyManagement.KeyActiveFolder;
         }
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default)
         {

@@ -36,7 +36,7 @@ namespace ZD_Article_Grabber.Controllers
         private protected ECDsaSecurityKey LoadKey()
         {
             // Get the full path for the private key
-            string privKeyPath = Path.Combine(_config.KeyManagement.KeyFolder, CURRENT_PRIVATE_KEY);
+            string privKeyPath = Path.Combine(_config.KeyManagement.KeyActiveFolder, CURRENT_PRIVATE_KEY);
 
             // Read and create the key
             string? priv = System.IO.File.ReadAllText(privKeyPath);
@@ -142,7 +142,7 @@ namespace ZD_Article_Grabber.Controllers
         #endif
         public IActionResult GetPublicKey()
         {
-            string pubKeyPath = Path.Combine(_config.KeyManagement.KeyFolder, CURRENT_PUBLIC_KEY);
+            string pubKeyPath = Path.Combine(_config.KeyManagement.KeyActiveFolder, CURRENT_PUBLIC_KEY);
 
             if( !System.IO.File.Exists(pubKeyPath) )
             {

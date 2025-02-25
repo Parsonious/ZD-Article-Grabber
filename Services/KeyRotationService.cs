@@ -22,7 +22,7 @@ namespace ZD_Article_Grabber.Services
         {
             _logger = logger;
             _config = config;
-            _keyFolder = _config.KeyManagement.KeyFolder;
+            _keyFolder = _config.KeyManagement.KeyActiveFolder;
             _rotationInterval = TimeSpan.FromDays(_config.KeyManagement.RotationIntervalDays);
             _keyLifetime = TimeSpan.FromDays(_config.KeyManagement.KeyLifetimeDays);
         }
@@ -106,29 +106,66 @@ namespace ZD_Article_Grabber.Services
         }
         private async Task CleanupExpiredKeys()
         {
-            var retentionPeriod = TimeSpan.FromDays(
-                double.Parse(_config.KeyManagement.RotationIntervalDays.ToString() ?? "180")); //default to 180 days if not set or read
+            string archivePath = Path.Combine(Path.GetDirectoryName(_keyFolder) ?? "", _config.KeyManagement.KeyArchiveFolder);
+            //Ensure Directory Exists
+            if ( !Directory.Exists(archivePath) )
+            {
+                Directory.CreateDirectory(archivePath);
+            }
+            TimeSpan retentionPeriod = TimeSpan.FromDays(_config.KeyManagement.RetentionPeriodDays);
             var files = Directory.GetFiles(_keyFolder, "*.priv.pem")
-                .Where(f => !f.Contains("current"))
-                .Where(f => (DateTime.UtcNow - File.GetCreationTime(f)) > retentionPeriod);
+                                    .Where(f => !f.Contains("current"))
+                                    .Where(f => (DateTime.UtcNow - File.GetCreationTime(f)) > retentionPeriod);
 
-            foreach (var file in files)
+            foreach ( var file in files )
+            {
+                try
+                {
+                    string fileName = Path.GetFileName(file);
+                    string archivePrivPath = Path.Combine(archivePath, fileName);
+                    string pubKey = Path.ChangeExtension(file, ".pub.pem");
+                    string archivePubPath = Path.Combine(archivePath, Path.GetFileName(pubKey));
+
+                    if(File.Exists(file))
+                    {
+                        await Task.Run(() => File.Move(file, archivePrivPath, true));
+                        _logger.LogInformation("Archived private key: {FileName}", file);
+                    }
+                    if ( File.Exists(pubKey) )
+                    {
+                        await Task.Run(() => File.Move(pubKey, archivePubPath, true));
+                        _logger.LogInformation("Archived public key: {FileName}", pubKey);
+                    }
+                }
+                catch ( Exception ex )
+                {
+                    _logger.LogError(ex, "Error archiving key file: {FileName}", file);
+                }
+                await RemoveExpiredKeysFromArchive(archivePath, retentionPeriod);
+            }
+        }
+        private async Task RemoveExpiredKeysFromArchive(string archivePath, TimeSpan retentionPeriod)
+        {
+            var archiveFiles = Directory.GetFiles(archivePath, "*.priv.pem")
+                                           .Where(f => (DateTime.UtcNow - File.GetCreationTime(f)) > retentionPeriod);
+            foreach ( var file in archiveFiles )
             {
                 try
                 {
                     await Task.Run(() => File.Delete(file));
                     var pubKey = Path.ChangeExtension(file, ".pub.pem");
-                    if (File.Exists(pubKey))
+                    if ( File.Exists(pubKey) )
                     {
                         await Task.Run(() => File.Delete(pubKey));
                     }
-                    _logger.LogInformation("Deleted expired key: {KeyPath}", file);
+                    _logger.LogInformation("Removed expired key: {FileName}", file);
                 }
-                catch (Exception ex)
+                catch ( Exception ex )
                 {
-                    _logger.LogError(ex, "Error deleting expired key: {KeyPath}", file);
+                    _logger.LogError(ex, "Error removing expired key: {FileName}", file);
                 }
             }
+
         }
 
         private async Task UpdateCurrentKeyPointersAsync(string keyId)
