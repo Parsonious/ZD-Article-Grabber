@@ -14,7 +14,4 @@ namespace ZD_Article_Grabber.Config
         public required RefererConfig Referer { get; set; }
     }
 }
-///TODO Test for the following:
-///why the fuck is swagger still asking for an authorization key
-///how to fuck do i call this api via curl
-///how the fuck do I test this shit in swagger now
+
