@@ -1,12 +1,12 @@
 ﻿namespace ZD_Article_Grabber.Types
 {
-    public enum Instructions
+    public enum Instructions: byte
     {
-        PlainText,
-        BitMap,
-        Audio,
-        Video,
-        Binary,
-        Reference
+        PlainText = 1,
+        BitMap = 2,
+        Audio = 4,
+        Video= 8,
+        Binary = 16,
+        Reference = 32
     }
 }

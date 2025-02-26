@@ -29,7 +29,7 @@ namespace ZD_Article_Grabber.Services
                 TimeSpan.FromMinutes(5), // Initial delay
                 TimeSpan.FromHours(1));  // Regular interval
         }
-        public async Task<bool> IsKeyValidAsync(string keyId)
+        public ValueTask<bool> IsKeyValidAsync(string keyId)
         {
             if (_keyHistory.TryGetValue(keyId, out var metadata))
             {
@@ -38,11 +38,11 @@ namespace ZD_Article_Grabber.Services
                 {
                     _logger.LogWarning("Key {KeyId} has expired.", keyId);
                 }
-                return isValid;
+                return new ValueTask<bool>(isValid);
             }
 
             _logger.LogWarning("Key {KeyId} not found in history.", keyId);
-            return false;
+            return new ValueTask<bool>(false);
         }
         public void TrackKeyUsage(string keyId)
         {

@@ -11,15 +11,16 @@ namespace ZD_Article_Grabber.Resources.Nodes
     public class Node(HtmlNode htmlNode, IConfigOptions settings, IPathHelper pathHelper, IResourceInstructions resourceInstructions)
     {
         public HtmlNode HtmlNode { get; private set; } = htmlNode ?? throw new ArgumentNullException(nameof(htmlNode));
-        public NodeContent Content { get; internal set; }
+        public required NodeContent Content { get; set; }
         public NodeID Id { get; private set; } = new NodeID(htmlNode, settings, pathHelper);
         private readonly IResourceInstructions _resourceInstructions = resourceInstructions;    
-        private readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
 
-        public async Task ProcessNodeAsync()
-        {
-            await UpdateHtmlNode();
-        }
+        public ValueTask ProcessNodeAsync() =>
+            _resourceInstructions.IsResourceMatched(Id.Type)
+            ? new ValueTask(UpdateHtmlNode())
+            : default;
+
         //This handles how the node is "delivered" to the HTML page
         public async Task UpdateHtmlNode()
         {
@@ -38,7 +39,6 @@ namespace ZD_Article_Grabber.Resources.Nodes
                         await HandleUnsupported(Id.Type, instruction);
                         break;
                 }
-                await Task.CompletedTask; //simulate async 
             }
         }
         private async Task HandlePlainText(ResourceType type, string nodeContent)

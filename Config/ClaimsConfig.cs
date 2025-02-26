@@ -1,8 +1,12 @@
 ﻿namespace ZD_Article_Grabber.Config
 {
-    public class ClaimsConfig
+    public readonly record struct ClaimsConfig
     {
-        public required string Type { get; set; } = string.Empty;
-        public required string Value { get; set; } = string.Empty;
+        public required string Type { get; init; } = string.Empty;
+        public required string Value { get; init; } = string.Empty;
+
+        public ClaimsConfig()
+        {
+        }
     }
 }

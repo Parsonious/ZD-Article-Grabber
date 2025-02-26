@@ -1,11 +1,11 @@
 ﻿namespace ZD_Article_Grabber.Config
 {
-    public class JwtConfig
+    public readonly record struct JwtConfig
     {
-        public required string TokenKey { get; set; }
-        public required string Issuer { get; set; }
-        public required double ExpirationInMinutes { get; set; }
-        public required string ApiKey { get; set; }
+        public required string TokenKey { get; init; }
+        public required string Issuer { get; init; }
+        public required double ExpirationInMinutes { get; init; }
+        public required string ApiKey { get; init; }
 
     }
 }

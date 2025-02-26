@@ -1,13 +1,15 @@
 ﻿namespace ZD_Article_Grabber.Types
 {
-    public enum ResourceType
+    [Flags]
+    public enum ResourceType : byte
     {
-        CSS,
-        HTML,
-        IMG,
-        JS,
-        PS1,
-        SQL,
-        OTHER
+        None = 0,
+        CSS = 1,
+        HTML = 2,
+        IMG = 4,
+        JS = 8,
+        PS1 = 16,
+        SQL = 32,
+        OTHER = 128
     }
 }

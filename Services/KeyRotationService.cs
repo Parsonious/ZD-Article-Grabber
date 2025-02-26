@@ -87,7 +87,13 @@ namespace ZD_Article_Grabber.Services
                 Directory.CreateDirectory(_keyFolder);
                 _logger.LogInformation("Created key folder: {KeyFolder}", _keyFolder);
             }
+
             using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP384);
+            if ( !ValidateKeyPair(ecdsa) )
+            {
+                _logger.LogError("Failed to validate new key pair");
+                return;
+            }
             var timestamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
             var keyId = $"ec-key-{timestamp}";
 

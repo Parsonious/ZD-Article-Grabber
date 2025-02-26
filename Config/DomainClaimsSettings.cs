@@ -1,7 +1,7 @@
 ﻿namespace ZD_Article_Grabber.Config
 {
-    public class DomainClaimsSettings
+    public sealed class DomainClaimsSettings
     {
-        public required List<ClaimsConfig> Claims { get; set; } = [];
+        public required IReadOnlyList<ClaimsConfig> Claims { get; set; } = [];
     }
 }

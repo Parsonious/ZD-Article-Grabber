@@ -1,6 +1,6 @@
 namespace ZD_Article_Grabber.Records
 {
-public record KeyMetadata
+public record class KeyMetadata
     {
         public string KeyId { get; init; }
         public DateTime CreatedAt { get; init; }
