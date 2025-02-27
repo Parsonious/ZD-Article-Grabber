@@ -12,7 +12,7 @@ namespace ZD_Article_Grabber.Resources.Nodes
     {
         public HtmlNode HtmlNode { get; private set; } = htmlNode ?? throw new ArgumentNullException(nameof(htmlNode));
         public required NodeContent Content { get; set; }
-        public NodeID Id { get; private set; } = new NodeID(htmlNode, settings, pathHelper);
+        public NodeID Id { get; private init; } = new NodeID(htmlNode, settings, pathHelper);
         private readonly IResourceInstructions _resourceInstructions = resourceInstructions;    
         private static readonly ConcurrentDictionary<string, SemaphoreSlim> _locks = new();
 

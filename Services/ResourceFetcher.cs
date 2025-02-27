@@ -84,7 +84,6 @@ namespace ZD_Article_Grabber.Services
             Pipe pipe = new();
             await using var stream = await response.Content.ReadAsStreamAsync();
 
-            //create a list to store the results of the pipe reader
             using MemoryStream memStream = new();
 
             async Task FillPipeAsync()
