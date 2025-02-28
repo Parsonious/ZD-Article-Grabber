@@ -12,6 +12,9 @@ using ZD_Article_Grabber.Helpers;
 using ZD_Article_Grabber.Services;
 using ZD_Article_Grabber.Builders;
 using ZD_Article_Grabber.Types;
+using ZD_Article_Grabber.HealthChecks;
+using ZD_Article_Grabber.Resources.Cache;
+using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,7 +106,32 @@ builder.Services.AddSwaggerGen(c =>
 //Custom
 builder.Services.AddHealthChecks()
     .AddCheck<KeyManagementHealthCheck>("KeyManagement");
-builder.Services.AddMemoryCache();
+
+builder.Services.AddMemoryCache(opt =>
+{
+    opt.SizeLimit = 970_496_000;
+    opt.CompactionPercentage = 0.3;
+    opt.ExpirationScanFrequency = TimeSpan.FromMinutes(10);
+});
+
+//compression response
+builder.Services.AddResponseCompression( opt =>
+    {
+        opt.EnableForHttps = true;
+        opt.Providers.Add<BrotliCompressionProvider>();
+        opt.Providers.Add<GzipCompressionProvider>();
+        opt.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["text/html", "text/css", "application/javascript, text/javascript"]);
+    });
+builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Optimal;
+});
+builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+{
+    options.Level = System.IO.Compression.CompressionLevel.Optimal;
+});
+
+//Auth stuff
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -144,6 +172,8 @@ builder.Services.AddSingleton<IResourceFetcher, ResourceFetcher>();
 builder.Services.AddSingleton<ICacheHelper, CacheHelper>();
 builder.Services.AddSingleton<Dependencies>();
 builder.Services.AddSingleton<IKeyHistoryService, KeyHistoryService>();
+builder.Services.AddSingleton<TokenCache>();
+builder.Services.AddSingleton<ECDsaPool>();
 
 //Transients
 builder.Services.AddTransient<IContentFetcher, ContentFetcher>();

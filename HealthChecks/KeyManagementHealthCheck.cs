@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ZD_Article_Grabber.Interfaces;
 
-namespace ZD_Article_Grabber.Services
+namespace ZD_Article_Grabber.HealthChecks
 {
     public class KeyManagementHealthCheck : IHealthCheck
     {

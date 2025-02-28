@@ -6,6 +6,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Cryptography;
 using ZD_Article_Grabber.Interfaces;
+using ZD_Article_Grabber.Resources.Cache;
+using System.Threading.Tasks;
 
 
 
@@ -16,9 +18,10 @@ namespace ZD_Article_Grabber.Controllers
     public class TokenController : ControllerBase
     {
         //private readonly IArticle _article;
-        public required IConfigOptions _config;
-        public required IKeyHistoryService _keyHistory;
-        public required ECDsaSecurityKey _ecdsaKey;
+        private readonly IConfigOptions _config;
+        private readonly IKeyHistoryService _keyHistory;
+        private readonly TokenCache _tokenCache;
+
 
         private const string DEBUG_TOKEN_ENDPOINT = "get-token";
         private const string DEBUG_PUBLIC_KEY_ENDPOINT = "get-public-key";
@@ -27,32 +30,11 @@ namespace ZD_Article_Grabber.Controllers
         private const string CURRENT_PRIVATE_KEY = "current.priv.pem";
         private const string CURRENT_PUBLIC_KEY = "current.pub.pem";
 
-        public TokenController(IConfigOptions config, IKeyHistoryService keyHistory)
+        public TokenController(IConfigOptions config, IKeyHistoryService keyHistory, TokenCache tokenCache)
         {
             _config = config;
             _keyHistory = keyHistory;
-            _ecdsaKey = LoadKey();
-        }
-        private protected ECDsaSecurityKey LoadKey()
-        {
-            // Get the full path for the private key
-            string privKeyPath = Path.Combine(_config.KeyManagement.KeyActiveFolder, CURRENT_PRIVATE_KEY);
-
-            // Read and create the key
-            string? priv = System.IO.File.ReadAllText(privKeyPath);
-            ECDsa? ecdsa = ECDsa.Create();
-            ecdsa.ImportFromPem(priv);
-
-            // Generate a unique key ID based on file metadata and hash
-            DateTime keyMetadata = System.IO.File.GetCreationTime(privKeyPath);
-            byte[] keyBytes = System.IO.File.ReadAllBytes(privKeyPath);
-            string keyHash = Convert.ToHexString(SHA256.HashData(keyBytes)).Substring(0, 8);
-            string keyId = $"ec-{keyHash}-{keyMetadata:yyyyMMdd}";
-
-            return new ECDsaSecurityKey(ecdsa)
-            {
-                KeyId = keyId
-            };
+            _tokenCache = tokenCache;
         }
 
         #if DEBUG
@@ -61,7 +43,7 @@ namespace ZD_Article_Grabber.Controllers
         [HttpGet(RELEASE_TOKEN_ENDPOINT)] //hex encoded get-token
         #endif
 
-        public IActionResult GenerateToken(string title)
+        public async Task<IActionResult> GenerateToken(string title)
         {
             //validate api key before anything else is done
             if(!Request.Headers.TryGetValue("bak", out var apiKey) )
@@ -103,6 +85,8 @@ namespace ZD_Article_Grabber.Controllers
             //    return BadRequest("Title is not valid");
             //}
 
+            ECDsaSecurityKey key = await _tokenCache.GetCurrentSigningKeyAsync();
+
             //Generate Boilerplate JWT Claims
             var claims = new List<Claim>
             {
@@ -120,14 +104,14 @@ namespace ZD_Article_Grabber.Controllers
                 }
             }
 
-            _keyHistory.TrackKeyUsage(_ecdsaKey.KeyId);
+            _keyHistory.TrackKeyUsage(key.KeyId);
 
             //Generate JWT Token
             JwtSecurityToken token = new(
                 issuer: _config.Jwt.Issuer,
                 claims: claims,
                 expires: DateTime.Now.AddMinutes(_config.Jwt.ExpirationInMinutes),
-                signingCredentials: new SigningCredentials( _ecdsaKey, SecurityAlgorithms.EcdsaSha256, _ecdsaKey.KeyId )
+                signingCredentials: new SigningCredentials(key, SecurityAlgorithms.EcdsaSha256, key.KeyId )
             );
 
             return Ok(new
