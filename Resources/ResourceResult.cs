@@ -2,16 +2,17 @@
 
 namespace ZD_Article_Grabber.Resources
 {
-    public record ResourceResult
+    public sealed record ResourceResult
     {
         public ResourceID Id { get; init; }
         public string Url { get; set; }
-        public byte[] Content { get; set; }
+        private readonly byte[] _content;
+        public ReadOnlySpan<byte> Content => _content;
 
         public ResourceResult(ResourceID id, byte[] content)
         {
             Id = id;
-            Content = content;
+            _content = content;
         }
     }
 }

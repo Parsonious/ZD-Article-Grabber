@@ -26,9 +26,18 @@ namespace ZD_Article_Grabber.Resources.Pages
                                     .SelectNodes(string.Join("|", _dependencies.Settings.XPathQueries.Keys))
                                     ?.ToList() ?? []; //wild ass notation for: new List<HtmlNode>();
 
-            var nodeTasks = htmlNodes.Select(async htmlNode => await _nodeBuilder.BuildNodeAsync(htmlNode));
-            var nodes = await Task.WhenAll(nodeTasks);
-            return [.. nodes]; //wild ass notation for: nodes.ToList(); 
+            if (htmlNodes.Count > 5)
+            {
+                //process in parallel
+                return await Task.WhenAll(htmlNodes.Select(node => _nodeBuilder.BuildNodeAsync(node))).ContinueWith(t => t.Result.ToList());
+            }
+            //process sequentially for simple pages
+            List<Node> nodes = new(htmlNodes.Count);
+            foreach ( var node in htmlNodes)
+            {
+                nodes.Add(await _nodeBuilder.BuildNodeAsync(node));
+            }
+            return nodes;
 
         }
         public async Task ProcessFilesAsync()
