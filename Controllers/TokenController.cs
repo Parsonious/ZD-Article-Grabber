@@ -46,7 +46,8 @@ namespace ZD_Article_Grabber.Controllers
         public async Task<IActionResult> GenerateToken(string title)
         {
             //validate api key before anything else is done
-            if(!Request.Headers.TryGetValue("bak", out var apiKey) )
+            if(!Request.Headers.TryGetValue("bak", out var apiKey) ||
+                apiKey != _config.Jwt.ApiKey)
             {
                 return Unauthorized("Call a locksmith");
             }

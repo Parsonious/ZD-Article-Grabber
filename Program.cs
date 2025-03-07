@@ -35,17 +35,6 @@ else
 {
     builder.Configuration.AddEnvironmentVariables();
 }
-//validate JWT configuration
-var jwtConfigSection = configuration.GetSection("Jwt");
-var jwtConfig = jwtConfigSection.Get<ZD_Article_Grabber.Config.JwtConfig>();
-
-if ( jwtConfig == null ||
-    string.IsNullOrEmpty(jwtConfig.TokenKey) ||
-    string.IsNullOrEmpty(jwtConfig.ApiKey) ||
-    string.IsNullOrEmpty(jwtConfig.Issuer) )
-{
-    throw new InvalidOperationException("JWT configuration is missing or incomplete.");
-}
 
 #if DEBUG
 //Defaults - left for debug
@@ -135,7 +124,12 @@ builder.Services.Configure<GzipCompressionProviderOptions>(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        string publicKeyPath = Path.Combine(configuration["KeyManagement:KeyFolder"] ?? "Keys", "current.pub.pem");
+        string publicKeyPath = Path.Combine(configuration["KeyManagement:KeyFolder"] ?? "keys/active", "current.pub.pem");
+        if (!File.Exists(publicKeyPath))
+        {
+            throw new FileNotFoundException("Public key not found", publicKeyPath);
+        }
+        
         string pubKey = File.ReadAllText(publicKeyPath);
 
         ECDsa eCDsa = ECDsa.Create();
