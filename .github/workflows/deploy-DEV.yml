@@ -74,7 +74,7 @@ jobs:
           --name $container_name \
           --env KeyManagement__KeyFolder=/app/keys \
           --env KeyManagement__Environment=Development \
-          --env Jwt__ApiKey="${{ secrets.DEV_JWT_API_KEY }}" \
+          --env Jwt__ApiKey="${{ secrets.JWT_API_KEY_DEV }}" \
           --env Jwt__Issuer="https://dev.bepio.net" \
           -v /var/www/bepio/api/source:/api/source \
           -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
