@@ -16,7 +16,10 @@ namespace ZD_Article_Grabber.Builders
         private readonly IResourceInstructions _resourceInstructions = resourceInstructions;
         public async Task<Node> BuildNodeAsync(HtmlNode htmlNode)
         {
-            Node node = new(htmlNode, _dependencies.Settings, pathHelper, _resourceInstructions);
+            Node node = new(htmlNode, _dependencies.Settings, pathHelper, _resourceInstructions)
+            {
+                Content = new NodeContentString(string.Empty) //empty default content to be set in FetchContentAsync
+            };
             await FetchContentAsync(node);
             return node;
         }
@@ -31,7 +34,7 @@ namespace ZD_Article_Grabber.Builders
                 case ResourceType.CSS:
                 case ResourceType.SQL:
                 case ResourceType.PS1:
-                case ResourceType:JS:
+                case ResourceType.JS:
                     await ByteToTextType(node);
                     break;
                 default:
@@ -48,7 +51,7 @@ namespace ZD_Article_Grabber.Builders
         private async Task HandleByteType(Node node)
         {
             var resource = await _resourceFetcher.FetchResourceAsync(node.Id);
-            node.Content = new NodeContentBytes(resource.Content);
+            node.Content = new NodeContentBytes(resource.Content.ToArray()); //convert ReadOnlySpan<byte> to byte[] 
             node.Id.ResourceUrl = resource.Url;
         }
 
