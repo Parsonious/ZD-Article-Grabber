@@ -1,5 +1,6 @@
 using ZD_Article_Grabber.Helpers;
 using ZD_Article_Grabber.Interfaces;
+using ZD_Article_Grabber.Types;
 
 namespace ZD_Article_Grabber.Resources.Pages
 {
@@ -9,7 +10,7 @@ namespace ZD_Article_Grabber.Resources.Pages
         public IPathHelper PathHelper { get; init; }
         public PageID(string title, IConfigOptions config, IPathHelper pathHelper)
         {
-            Type = ResourceType.Html;
+            Type = ResourceType.HTML;
             Config = config;
             PathHelper = pathHelper;
 
