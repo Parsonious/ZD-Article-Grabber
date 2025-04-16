@@ -21,7 +21,6 @@ namespace ZD_Article_Grabber.Builders
             // Check if the page is already in the cache
             if ( _dependencies.Cache.TryGetValue(iD.CacheKey, out CachedPage? cachedPage) && cachedPage is not null )
             {
-                ///TODO: Determine if this is still a relevant comment
                 //Update the cache Expiration for the page to be in cache for 10 additional minutes. 
                 //This approach can be dangerous if the page is accessed or updated frequently but works for now.
                 //Will need to create a new Issue for this to improve on Cache Expiration and prevent stale data.

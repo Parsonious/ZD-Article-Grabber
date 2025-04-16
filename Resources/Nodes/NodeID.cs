@@ -4,7 +4,6 @@ using System.Text;
 using HtmlAgilityPack;
 using ZD_Article_Grabber.Helpers;
 using ZD_Article_Grabber.Interfaces;
-using ZD_Article_Grabber.Types;
 
 namespace ZD_Article_Grabber.Resources.Nodes
 {
@@ -50,11 +49,11 @@ namespace ZD_Article_Grabber.Resources.Nodes
 
             return tagName switch
             {
-                "link" when _htmlNode.GetAttributeValue("rel", "") == "stylesheet" => ResourceType.CSS,
-                "script" => ResourceType.JS,
-                "img" => ResourceType.IMG,
-                "a" when _htmlNode.GetAttributeValue("href", "").EndsWith(".sql", StringComparison.OrdinalIgnoreCase) => ResourceType.SQL,
-                "a" when _htmlNode.GetAttributeValue("href", "").EndsWith(".ps1", StringComparison.OrdinalIgnoreCase) => ResourceType.PS1,
+                "link" when _htmlNode.GetAttributeValue("rel", "") == "stylesheet" => ResourceType.Css,
+                "script" => ResourceType.Js,
+                "img" => ResourceType.Img,
+                "a" when _htmlNode.GetAttributeValue("href", "").EndsWith(".sql", StringComparison.OrdinalIgnoreCase) => ResourceType.Sql,
+                "a" when _htmlNode.GetAttributeValue("href", "").EndsWith(".ps1", StringComparison.OrdinalIgnoreCase) => ResourceType.Ps1,
                 _ => throw new InvalidOperationException($"Unknown type for node: {_htmlNode.Name}")
             };
         }

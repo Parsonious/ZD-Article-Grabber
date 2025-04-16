@@ -1,11 +1,11 @@
 namespace ZD_Article_Grabber.Config
 {
-    public readonly record struct PathsConfig
+    public class PathsConfig
     {
-        public required string HtmlFilesPath { get; init; }
-        public required string ResourceFilesPath { get; init; }
-        public required string FallbackRemoteUrlPath { get; init; }
-        public required string ExternalResourceUrlPath { get; init; }
+        public required string HtmlFilesPath { get; set; }
+        public required string ResourceFilesPath { get; set; }
+        public required string FallbackRemoteUrlPath { get; set; }
+        public required string ExternalResourceUrlPath { get; set; }
 
     }
 }

@@ -6,8 +6,8 @@
         ResourceContentBytes: Inherits from ResourceContent and holds byte[] data.
     */
     public abstract record NodeContent;
-    public sealed record NodeContentString(string Content) : NodeContent;
-    public sealed record NodeContentBytes(byte[] Content) : NodeContent;
+    public record NodeContentString(string Content) : NodeContent;
+    public record NodeContentBytes(byte[] Content) : NodeContent;
 
 
 }

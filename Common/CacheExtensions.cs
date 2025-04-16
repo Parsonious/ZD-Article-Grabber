@@ -1,20 +1,19 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using System.Diagnostics.CodeAnalysis;
+
 namespace ZD_Article_Grabber.Common
 {
     public static class CacheExtensions
     {
-        public static bool TryGetFromCache<T>(this IMemoryCache cache, string cacheKey, [NotNullWhen(true)] out T? value)
-            where T : class
+        public static bool TryGetFromCache<T>(this IMemoryCache cache, string cacheKey, out T value)
         {
-            if ( cache.TryGetValue(cacheKey, out object? cached) && cached is T typedValue)
+            if ( cache.TryGetValue(cacheKey, out object? cachedValue) )
             {
-                value = typedValue;
+                value = (T) cachedValue;
                 return true;
             }
             else
             {
-                value = default;
+                value = default(T);
                 return false;
             }
         }

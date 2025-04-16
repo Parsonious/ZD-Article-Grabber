@@ -6,16 +6,12 @@ namespace ZD_Article_Grabber.Helpers
 {
     public class SeedHelper
     {
-        public uint GetHybridSeed(uint? hash)
+        public uint GetHybridSeed(uint hash)
         {
-            if ( hash == null )
-            {
-                throw new ArgumentNullException(nameof(hash));
-            }
             byte[] bytes = new byte[4];
             RandomNumberGenerator.Fill(bytes);
             uint randomNumber = BitConverter.ToUInt32(bytes, 0);
-            return ((uint) hash ^ randomNumber); //explicit cast and combination of random and deterministic seed use XOR
+            return (hash ^ randomNumber); //explicit cast and combination of random and deterministic seed use XOR
         }
         public uint GetRandomUInt()
         {

@@ -1,14 +1,14 @@
 ﻿using System.Runtime;
 using System.Text;
 using ZD_Article_Grabber.Interfaces;
-using ZD_Article_Grabber.Types;
+using ZD_Article_Grabber.Resources;
 
 namespace ZD_Article_Grabber.Helpers
 {
     public class PathHelper : IPathHelper
     {
         // Map of characters to their URL encoded values per RFC 3986 standard
-        private static readonly Dictionary<char, string> UrlEncodingMap = new()
+        private static readonly Dictionary<char, string> UrlEncodingMap = new Dictionary<char, string>
     {
         {' ', "%20"}, {'!', "%21"}, {'"', "%22"}, {'#', "%23"}, {'$', "%24"}, {'%', "%25"}, {'&', "%26"},
         {'\'', "%27"}, {'(', "%28"}, {')', "%29"}, {'*', "%2A"}, {'+', "%2B"}, {',', "%2C"}, {'/', "%2F"},
@@ -53,12 +53,12 @@ namespace ZD_Article_Grabber.Helpers
         }
         public string GetExtension(ResourceType type) => type switch
         {
-            ResourceType.CSS => ".css",
-            ResourceType.HTML => ".html",
-            ResourceType.IMG => ".img",
-            ResourceType.JS => ".js",
-            ResourceType.PS1 => ".ps1",
-            ResourceType.SQL => ".sql",
+            ResourceType.Css => ".css",
+            ResourceType.Html => ".html",
+            ResourceType.Img => ".img",
+            ResourceType.Js => ".js",
+            ResourceType.Ps1 => ".ps1",
+            ResourceType.Sql => ".sql",
             _ => throw new InvalidOperationException($"Unsupported node type: {type}")
         };
 
@@ -81,7 +81,7 @@ namespace ZD_Article_Grabber.Helpers
                 return preEncodedUrl;
             }
 
-            StringBuilder encodedString = new(preEncodedUrl.Length * 2); //pre allocate capacity assuming SOME characters will be encoded
+            StringBuilder encodedString = new StringBuilder(preEncodedUrl.Length * 2); //pre allocate capacity assuming SOME characters will be encoded
             foreach ( char c in preEncodedUrl )
             {
                 if ( UrlEncodingMap.TryGetValue(c, out string? value) )

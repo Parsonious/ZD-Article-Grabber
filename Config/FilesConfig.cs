@@ -1,8 +1,8 @@
 namespace ZD_Article_Grabber.Config
 {
-    public sealed class FilesConfig
+    public class FilesConfig
     {
-        public required IReadOnlyList<string> SupportedFileTypes { get; init; }
-        public required IReadOnlyDictionary<string, string> DefaultFiles { get; init; }
+        public required List<string> SupportedFileTypes { get; set; }
+        public required Dictionary<string, string> DefaultFiles { get; set; }
     }
 }

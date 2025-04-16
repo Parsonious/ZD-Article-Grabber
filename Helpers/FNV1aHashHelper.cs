@@ -1,12 +1,10 @@
-﻿using System.Collections.Concurrent;
-using System.Text;
+﻿using System.Text;
 namespace ZD_Article_Grabber.Helpers
 {
     public class FNV1aHashHelper
     {
         private const uint FnvPrime = 16777619;
         private const uint FnvOffsetBasis = 2166136261;
-        private static readonly ConcurrentDictionary<Type, Func<object, byte[]>> _typeConverters = new();
         internal uint GenerateID<T>(T input) //internal to prevent MethodSelectHelper from calling it
         {
             byte[] data = ObjectToByteArray(input);
@@ -56,12 +54,10 @@ namespace ZD_Article_Grabber.Helpers
         }
         private protected static string ConvertHashToBase64UrlString(uint hash)
         {
-            StringBuilder sb = new(24);
-            sb.Append(Convert.ToBase64String(BitConverter.GetBytes(hash))
+            return Convert.ToBase64String(BitConverter.GetBytes(hash))
                 .Replace('+', '-')
                 .Replace('/', '_')
-                .TrimEnd('='));
-            return sb.ToString();
+                .TrimEnd('=');
         }
         private protected uint ComputeFNV1aHash(byte[] data)
         {
