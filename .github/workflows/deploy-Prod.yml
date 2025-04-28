@@ -63,40 +63,51 @@ jobs:
             docker stop $current_container
           fi
 
-          # Run the new container and capture output
-          if ! output=$(docker run -d -p 8080:80 -p 8443:443 \
-          --name $container_name \
-          --env KeyManagement__KeyFolder=/api/keys \
-          --env KeyManagement__Environment=Production \
-          --env Jwt__ApiKey="${{ secrets.JWT_API_KEY_PROD }}" \
-          --env Jwt__Issuer="https://bepio.net" \
-          -v /var/www/bepio/api/source:/api/source \
-          -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
-          -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
-          -v /var/www/bepio/api/prod/keys:/api/keys \
-          -v /var/www/bepio/api/prod/logs:/api/logs \
-          ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:${{ env.IMAGE_TAG }} 2>&1); then
-            echo "Docker run command failed with the following error:"
-            echo "$output"
-            exit 1
-          fi
-          echo "Containers before removal:"
-          docker ps -a --filter "name=PROD"
-          
-          #clean up old containers if more than 1 exists
-          container_count=$(docker ps -a --filter "name=PROD" -q | wc -l)
-          
-          if [ "$container_count" -gt 1 ]; then
-            old_containers=$(docker ps -a --filter "name=PROD" \
-            --format "{{.ID}} {{.CreatedAt}}" \
-            | sort -k2,2r \
-            | tail -n +4 \
-            | awk '{print $1}')
-
-            if [ ! -z "$old_containers" ]; then
-              docker rm -f $old_containers
+          # Run the new container
+            if ! output=$(docker run -d -p 8080:80 -p 8443:443 \
+            --name $container_name \
+            --env KeyManagement__KeyFolder=/api/keys \
+            --env KeyManagement__Environment=Production \
+            --env Jwt__ApiKey="${{ secrets.JWT_API_KEY_PROD }}" \
+            --env Jwt__Issuer="https://bepio.net" \
+            -v /var/www/bepio/api/source:/api/source \
+            -v /etc/letsencrypt/live/bepio.net/fullchain.pem:/etc/letsencrypt/live/bepio.net/fullchain.pem:ro \
+            -v /etc/letsencrypt/live/bepio.net/privkey.pem:/etc/letsencrypt/live/bepio.net/privkey.pem:ro \
+            -v /var/www/bepio/api/prod/keys:/api/keys \
+            -v /var/www/bepio/api/prod/logs:/api/logs \
+            ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:${{ env.IMAGE_TAG }} 2>&1); then
+              echo "Docker run command failed with the following error:"
+              echo "$output"
+              exit 1
             fi
-          fi
+
+            echo "New container started: $container_name"
+            echo "Containers before cleanup:"
+            docker ps -a --filter "name=PROD"
+
+            # Clean up old containers, but explicitly protect the one we just created
+            container_count=$(docker ps -a --filter "name=PROD" -q | wc -l)
+
+            if [ "$container_count" -gt 1 ]; then
+              echo "More than 1 PROD container found, cleaning up older ones..."
+              
+              # Explicitly exclude the current container from cleanup
+              old_containers=$(docker ps -a --filter "name=PROD" \
+                              --format "{{.ID}} {{.Names}}" \
+                              | grep -v "$container_name" \
+                              | awk '{print $1}')
+
+              if [ ! -z "$old_containers" ]; then
+                echo "Removing old containers: $old_containers"
+                docker rm -f $old_containers
+              else
+                echo "No old containers to remove"
+              fi
+            fi
+
+            # Verify containers after cleanup
+            echo "Containers after cleanup:"
+            docker ps -a --filter "name=PROD"
 
           # Clean up old images except the one we just deployed
           current_image="${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:${{ env.IMAGE_TAG }}"
