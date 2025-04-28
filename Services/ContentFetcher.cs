@@ -18,6 +18,7 @@ namespace ZD_Article_Grabber.Services
             //set up cache options
             var cacheOptions = new MemoryCacheEntryOptions()
             .SetSlidingExpiration(DefaultCacheTime)
+            .SetSize(page.Html.Length * 2)
             .SetPriority(CacheItemPriority.Normal);
 
             // Cache the page

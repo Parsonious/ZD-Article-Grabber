@@ -32,7 +32,8 @@ namespace ZD_Article_Grabber.Builders
 
                     _dependencies.Cache.Set(iD.CacheKey, cachedPage, new MemoryCacheEntryOptions
                     {
-                        AbsoluteExpiration = cachedPage.Expiration
+                        AbsoluteExpiration = cachedPage.Expiration,
+                        Size = 2048
                     });
                 }
                 return cachedPage.Page;
@@ -52,7 +53,11 @@ namespace ZD_Article_Grabber.Builders
             await page.ProcessFilesAsync();
 
             //Cache the processed page
-            _dependencies.Cache.Set(page.Id.CacheKey, page.Html); //make sure to set cache with updated HTML from Page, not raw from ResourceFetcher
+            _dependencies.Cache.Set(page.Id.CacheKey, page.Html, new MemoryCacheEntryOptions
+            {
+                SlidingExpiration = TimeSpan.FromMinutes(10),
+                Size = (page.Html.Length * 2) 
+            }); //make sure to set cache with updated HTML from Page, not raw from ResourceFetcher
             return page;
         }
 

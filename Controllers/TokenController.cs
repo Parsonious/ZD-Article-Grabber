@@ -76,7 +76,7 @@ namespace ZD_Article_Grabber.Controllers
             var sourceDomain = refererUri.Host.ToLowerInvariant();
 
             //validate title
-            if ( !_config.Referer.AllowedDomains.Contains(sourceDomain) )
+            if ( !_config.Referer.AllowedDomainsIm.Contains(sourceDomain) )
             {
                 return Unauthorized("Invalid referer domain");
             }

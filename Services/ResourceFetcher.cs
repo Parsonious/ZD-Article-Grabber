@@ -45,7 +45,8 @@ namespace ZD_Article_Grabber.Services
             // Cache the content
             _dependencies.Cache.Set(id.CacheKey, resourceResult, new MemoryCacheEntryOptions
             {
-                SlidingExpiration = TimeSpan.FromMinutes(10)
+                SlidingExpiration = TimeSpan.FromMinutes(10),
+                Size = (content.Length * 2)
             });
 
             return resourceResult;

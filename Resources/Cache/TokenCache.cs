@@ -27,6 +27,7 @@ namespace ZD_Article_Grabber.Resources.Cache
                 entry.SlidingExpiration = _defaultCacheTime;
                 entry.RegisterPostEvictionCallback(OnKeyEvicted);
                 entry.SetPriority(CacheItemPriority.High);
+                entry.Size = 2048; //default to 2kb estimate if it overflows bump it.
 
                 var key = await LoadCurrentKey();
                 _keyHistory.TrackKeyUsage(key.KeyId);

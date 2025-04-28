@@ -123,13 +123,32 @@ builder.Services.Configure<GzipCompressionProviderOptions>(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        string publicKeyPath = Path.Combine(configuration["KeyManagement:KeyFolder"] ?? "keys/active", "current.pub.pem");
-        if (!File.Exists(publicKeyPath))
+        string keyFolder;
+        if ( environment.IsDevelopment() )
+        {
+            // Use the path from configuration if available, or create a default path
+            keyFolder = configuration["KeyManagement:KeyActiveFolder"] ??
+                        Path.Combine(Directory.GetCurrentDirectory(), "keys", "active");
+
+            // Only update KeyFolder to match KeyActiveFolder if it doesn't exist
+            if ( string.IsNullOrEmpty(configuration["KeyManagement:KeyFolder"]) )
+            {
+                builder.Configuration["KeyManagement:KeyFolder"] = keyFolder;
+            }
+        }
+        else
+        {
+            keyFolder = configuration["KeyManagement:KeyActiveFolder"] ?? "keys/active";
+        }
+
+        string publicKeyPath = Path.Combine(keyFolder, "current.pub.pem");
+        if ( !File.Exists(publicKeyPath) )
         {
             throw new FileNotFoundException("Public key not found", publicKeyPath);
         }
-        
+
         string pubKey = File.ReadAllText(publicKeyPath);
+
 
         ECDsa eCDsa = ECDsa.Create();
         eCDsa.ImportFromPem(pubKey);
@@ -144,7 +163,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero, //strict expiration validation
         };
+        Console.WriteLine(keyFolder);
     });
+
 builder.Services.AddAuthorization();
 
 
