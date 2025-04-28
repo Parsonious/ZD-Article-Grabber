@@ -98,19 +98,48 @@ jobs:
             fi
           fi
 
-          # Clean up old images if more than 1 exists
-          image_count=$(docker images ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber --format "{{.ID}}" | wc -l)
+          # Clean up old images except the one we just deployed
+          current_image="${{ secrets.DOCKER_USERNAME }}/zd-article-grabber:${{ env.IMAGE_TAG }}"
+          echo "Protecting current image: $current_image"
 
-          # Only run cleanup if more than one image is found
-          if [ "$image_count" -gt 1 ]; then
-            old_images=$(docker images ${{ secrets.DOCKER_USERNAME }}/zd-article-grabber \
-            --format "{{.ID}} {{.CreatedAt}}" \
-            | sort -k2,2r \
-            | tail -n +4 \
-            | awk '{print $1}')
+            # List all images related to our application
+            echo "All images before cleanup:"
+            docker images "${{ secrets.DOCKER_USERNAME }}/zd-article-grabber" --format "{{.Repository}}:{{.Tag}} ({{.ID}}) - {{.CreatedAt}}"
 
-            if [ ! -z "$old_images" ]; then
-              docker rmi -f $old_images
+            # Find images to remove (all except the current one and the 2 previous versions)
+            image_count=$(docker images "${{ secrets.DOCKER_USERNAME }}/zd-article-grabber" --format "{{.ID}}" | wc -l)
+
+            if [ "$image_count" -gt 3 ]; then
+              echo "More than 3 images found, cleaning up older ones..."
+              
+              # Get the current image ID to protect it
+              current_image_id=$(docker images "$current_image" --format "{{.ID}}")
+              echo "Current image ID to protect: $current_image_id"
+              
+              # Get the latest 3 image IDs by creation date to keep
+              keep_images=$(docker images "${{ secrets.DOCKER_USERNAME }}/zd-article-grabber" \
+                          --format "{{.ID}} {{.CreatedAt}}" \
+                          | sort -k2,2r \
+                          | head -n 3 \
+                          | awk '{print $1}')
+              
+              echo "Images to keep: $keep_images"
+              
+              # Find and remove old images
+              remove_images=$(docker images "${{ secrets.DOCKER_USERNAME }}/zd-article-grabber" \
+                            --format "{{.ID}}" \
+                            | grep -v "$current_image_id" \
+                            | grep -v -F "$(echo "$keep_images" | tr '\n' '|' | sed 's/|$//')")
+              
+              if [ ! -z "$remove_images" ]; then
+                echo "Removing old images: $remove_images"
+                docker rmi -f $remove_images
+              else
+                echo "No old images to remove"
+              fi
             fi
-          fi
+
+            echo "Images after cleanup:"
+            docker images "${{ secrets.DOCKER_USERNAME }}/zd-article-grabber" --format "{{.Repository}}:{{.Tag}} ({{.ID}}) - {{.CreatedAt}}"
+
           EOF
