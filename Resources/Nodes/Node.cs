@@ -131,8 +131,6 @@ namespace ZD_Article_Grabber.Resources.Nodes
             {
                 var doc = HtmlNode.OwnerDocument;
                 
-                HtmlNode targetNode = HtmlNode;
-                
                 if ( HtmlNode.Name.Equals("a", StringComparison.OrdinalIgnoreCase) )
                 {
                     // If the current node is an anchor, we'll replace it completely
@@ -142,7 +140,7 @@ namespace ZD_Article_Grabber.Resources.Nodes
                         // Create a new div to replace the anchor
                         var newNode = doc.CreateElement("div");
                         parentNode.ReplaceChild(newNode, HtmlNode);
-                        targetNode = newNode;
+                        HtmlNode = newNode;
                     }
                 }
 
