@@ -2,7 +2,6 @@ using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZD_Article_Grabber.Interfaces;
-using ZD_Article_Grabber.Types;
 
 namespace ZD_Article_Grabber.Controllers
 {
@@ -22,7 +21,7 @@ namespace ZD_Article_Grabber.Controllers
 
         [HttpGet]
         [Authorize]
-        [ResponseCache(Duration = 600)] //10 mins
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<IActionResult> GetContent()
         {
             string? titleClaim = User.FindFirst("title")?.Value;
@@ -31,17 +30,17 @@ namespace ZD_Article_Grabber.Controllers
                 return BadRequest("Invalid token: Missing title claim");
             }
 
-            var htmlContent = await _fetchService.FetchHtmlAsync(titleClaim);
+            string htmlContent = await _fetchService.FetchHtmlAsync(titleClaim);
             
             if ( htmlContent == null )
             {
                 return NotFound("Page Not Found");
             }
             // Generate ETag from content
-            var etag = $"\"{Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(htmlContent))).Substring(0, 16)}\"";
+            string etag = $"\"{Convert.ToBase64String(System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(htmlContent))).Substring(0, 16)}\"";
 
             // Check if client has valid cached version
-            var clientETag = Request.Headers.IfNoneMatch.FirstOrDefault();
+            string clientETag = Request.Headers.IfNoneMatch.FirstOrDefault();
             if ( clientETag == etag )
             {
                 return StatusCode(304); // Not Modified
