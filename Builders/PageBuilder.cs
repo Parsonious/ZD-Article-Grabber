@@ -21,14 +21,10 @@ namespace ZD_Article_Grabber.Builders
             // Check if the page is already in the cache
             if ( _dependencies.Cache.TryGetValue(iD.CacheKey, out CachedPage? cachedPage) && cachedPage is not null )
             {
-                ///TODO: Determine if this is still a relevant comment
-                //Update the cache Expiration for the page to be in cache for 10 additional minutes. 
-                //This approach can be dangerous if the page is accessed or updated frequently but works for now.
-                //Will need to create a new Issue for this to improve on Cache Expiration and prevent stale data.
-                TimeSpan remainingTime = cachedPage.Expiration - System.DateTimeOffset.Now;
+                TimeSpan remainingTime = cachedPage.Expiration - DateTimeOffset.Now;
                 if ( remainingTime < TimeSpan.FromMinutes(10))
                 {
-                    cachedPage.Expiration = System.DateTimeOffset.Now.AddMinutes(10);
+                    cachedPage.Expiration = DateTimeOffset.Now.AddMinutes(10);
 
                     _dependencies.Cache.Set(iD.CacheKey, cachedPage, new MemoryCacheEntryOptions
                     {
@@ -42,21 +38,23 @@ namespace ZD_Article_Grabber.Builders
             // Use ResourceFetcher to get the HTML content
             ResourceResult rawResource = await _resourceFetcher.FetchResourceAsync(iD) ?? throw new InvalidOperationException("Content Could Not Be Fetched");
             
-            //Since we are returning the HTML as a string, convert byte[] to string
+            /// TODO: This took 548ms to process NLA Whitelisting...this needs to be faster.
+            //Since we are returning the HTML as a string, convert byte[] to string 
             string stringHtml = System.Text.Encoding.UTF8.GetString(rawResource.Content);
             iD.ResourceUrl = rawResource.Url;
 
             //Build Page
             Page page = new(iD, stringHtml, _dependencies, _nodeBuilder);
-            
+            /// TODO: This took 646ms to process NLA Whitelisting...this needs to be faster.
             //Build nodes of page
             await page.ProcessFilesAsync();
 
+            CachedPage cache = new (page, DateTimeOffset.Now.AddMinutes(10));
             //Cache the processed page
-            _dependencies.Cache.Set(page.Id.CacheKey, page.Html, new MemoryCacheEntryOptions
+            _dependencies.Cache.Set(page.Id.CacheKey, cache, new MemoryCacheEntryOptions
             {
                 SlidingExpiration = TimeSpan.FromMinutes(10),
-                Size = (page.Html.Length * 2) 
+                Size = page.Html.Length * 2
             }); //make sure to set cache with updated HTML from Page, not raw from ResourceFetcher
             return page;
         }
